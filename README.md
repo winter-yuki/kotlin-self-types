@@ -133,7 +133,7 @@ fun test(c: Comparable, a: A, b: B) {
 
 ### Return generic position
 
-`Self` can only be used in out position:
+`Self` can only be used in `out` position:
 
 ```kotlin
 interface In<in T> {
@@ -182,7 +182,41 @@ fun test(a: A, b: B) {
 
 ### Input generic position
 
-TODO
+`Self` can only be used in `in` position:
+
+```kotlin
+interface In<in T> {
+    fun accept(x: T)
+}
+
+interface Out<out T> {
+    fun produce(): T
+}
+
+interface Inv<T> {
+    fun id(x: T): T
+}
+
+abstract class A {
+    // ok, common return position mechanics (accepting argument instead of return)
+    fun f(x: In<Self>) = x.accept(this)
+    abstract fun g(x: Out<Self>)
+}
+
+class B : A() {
+    fun b() = Unit
+
+    override fun g(x: Out<Self>) {
+        // expect x to be of type B
+        x.produce().b()
+    }
+}
+
+fun test(a: A, b: B) {
+    b.f { b.b() }
+    a.g { a /* ERROR: A has no B.b */ }
+}
+```
 
 ## Motivation
 
