@@ -107,3 +107,44 @@ fun test() {
     val b = a.copy() // has type of `A`
 }
 ```
+
+### Input position
+
+Using `Self` in the input position looks meaningless:
+
+```kotlin
+interface Comparable {
+    operator fun compareTo(other: Self): Int
+}
+
+open class A(val a: Int) : Comparable {
+    override fun compareTo(other: Self): Int = a.compareTo(other.a)
+}
+
+class B(a: Int, val b: Int) : A(a) : Comparable {
+    override fun compareTo(other: Self): Int = b.compareTo(other.b)
+}
+
+fun test(a: A, b: B, c: Comparable) {
+    c.compareTo(a) // Compiles
+    a.compareTo(c) // Not compiles
+
+    (b as A).compareTo(a) // ERROR: dispatches to B.compareTo, no A.b field exists
+}
+```
+
+The only way to use `Self` in the input position is to use it as a placeholder for the first instance type:
+
+```kotlin
+interface A {
+    fun f(x: Self)
+}
+
+abstract class B : A {
+    override fun f(x: B /* use concrete type */) = Unit
+}
+
+class C : B() {
+    override fun f(x: B /* no freedom here */) = Unit
+}
+```
