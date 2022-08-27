@@ -1,12 +1,13 @@
 # Self-types design for Kotlin language
 
 Links:
-1. [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494)
-2. [Discussion](https://discuss.kotlinlang.org/t/self-types/371)
-3. [Discussion](https://discuss.kotlinlang.org/t/this-type/1421)
+1. [YouTrack feature request](https://youtrack.jetbrains.com/issue/KT-6494)
+2. [Discussion](https://discuss.kotlinlang.org/t/self-types/371) - java interoperability
+3. [Discussion](https://discuss.kotlinlang.org/t/this-type/1421) - observer example
 4. [Emulating self types in Kotlin](https://medium.com/@jerzy.chalupski/emulating-self-types-in-kotlin-d64fe8ea2e62)
 5. [Self Types with Java’s Generics](https://www.sitepoint.com/self-types-with-javas-generics/) - good about self-types generic emulations drawbacks
 6. [Self type in java plugin](https://github.com/manifold-systems/manifold)
+7. [`Self` name resolve considerations (ru)](https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2)
 
 ## Definition
 
@@ -17,7 +18,7 @@ A **self-type** refers to the type on which a method is called (more formally ca
 ```kotlin
 abstract class A {
     // `this` of `A` should be assignable to `Self(A)`
-    fun a(): Self = this
+    fun a(): Self = this // (this_is_self) - label to refer this example later
     fun b(): Self = apply {}
 
     abstract fun c(): Self
@@ -131,6 +132,38 @@ fun test(c: Comparable, a: A, b: B) {
 }
 ```
 
+So it is principal thing that derived class should tell base, what type is needed to be implemented. Example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
+
+```kotlin
+interface Comparable<in T> {
+    fun compareTo(other: T): Int
+}
+
+interface Item<T : Item<T>> : Comparable<T> {
+    val x: Int
+}
+
+abstract A : Item<A>
+
+class B : A() {
+    override fun fun compareTo(other: A): Int = x - other.x
+}
+
+fun <T : Item<T>> sortItems(items: List<Item<T>>)
+```
+
+And `Self` can be only a shortcut for a generic parameter with recursive constraint under the hood:
+
+```kotlin
+interface Item : Comparable {
+   fun compareTo(other: Self): Int
+   fun doSomethingElseWith(other: Self)
+   ...
+}
+
+fun <T : Item> sortItems(items: List<Item<T>>)
+```
+
 ### Return generic position
 
 `Self` can only be used in `out` position:
@@ -193,6 +226,7 @@ interface Out<out T> {
     fun produce(): T
 }
 
+// Similar to Out here
 interface Inv<T> {
     fun id(x: T): T
 }
@@ -220,7 +254,88 @@ fun test(a: A, b: B) {
 
 ## Motivation
 
-TODO real examples & workarounds
+Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts.
+
+### Transformation chains
+
+The most common example of self-types application is abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a transformation chain of an immutable object (or use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
+
+```kotlin
+open class Lazy<out T>(val computation: () -> T) {
+    fun clone(): Self = Lazy { computation() }
+}
+
+open class LazyNumber<out T : Number>(computation: () -> T) : Lazy<T>(computation) {
+    fun shortify(): Self = LazyNumber { computation().shortValue() }
+}
+
+class LazyInt(computation: () -> Int) : LazyNumber<Int>(computation) {
+    fun add(n: Int): Self = LazyInt { computation() + n }
+}
+
+fun test() {
+    LazyInt { 42 }
+        .clone()
+        .shortify()
+        .add(13)
+        .computation()
+}
+```
+
+Fluent assertions api [this](https://github.com/google/truth/blob/master/core/src/main/java/com/google/common/truth/Subject.java) and [this](https://github.com/assertj/assertj/blob/main/assertj-core/src/main/java/org/assertj/core/api/AbstractAssert.java) are real-world examples of transformation chains.
+
+### Observer pattern
+
+```kotlin
+abstract AbstractObservable {
+    private val observers = mutableListOf<(Self) -> Unit>
+
+    // Self in the input generic position - ok
+    fun observe(observer: (Self) -> Unit) {
+        observers += observer
+    }
+
+    protected fun notify() {
+        observers.forEach { observer ->
+            observer(this)
+        }
+    }
+}
+
+class Element : Observable {
+    var color: Color = Color.Purple
+        set(value: Color) {
+            param = value
+            notify()
+        }
+}
+
+fun test() {
+    val element = Element().apply {
+        observe {
+            printLn("New color = ${it.color}")
+        }
+    }
+    element.color = Color.Blue
+}
+```
+
+### Recursive containers
+
+```kotlin
+// Return out generic position - ok
+open class Node(val children: List<Self>)
+
+class BetterNode(children: List<BetterNode>) : Node(children) {
+    fun doTheBest() = printLn(42)
+}
+
+fun test(betterTree: BetterNode) {
+    betterTree.children
+        .flatMap { it.children }
+        .forEach { it.doTheBest() }
+}
+```
 
 ## Implementation
 
@@ -231,7 +346,52 @@ There are three approaches to implement self-type behavior:
 
 ### Direct implementation
 
-TODO
+Direct self-types implementation adds recursive generic parameter implicitly and substitutes it instead of `Self` type marker.
+
+Let's consider translated code, let `I` be generated type parameter:
+
+```kotlin
+open class A<I : A<I>> {
+    fun f(): I = this /* add cast to I */
+}
+
+// Need to generate no-generic class to use A as usual
+// and substitute it instead of `A` automatically.
+// `A` should be open.
+class A_ : A<A_>
+
+class B<I : B<I>> : A<I>
+
+// Should make B open
+class B_ : B<B_>
+
+fun test(b: B /* automatically add <B_> */) {
+    val a_ = A() // Need to substitute <A_>
+    (b as A /* add <A_> */).f() as B /* substitute <B_> */
+}
+```
+
+Or approach of using generic methods:
+
+```kotlin
+open class A {
+    // Source
+    fun f(): Self = this
+
+    // Generated instead
+    fun <I : A> f(): I = this /* as I */
+}
+
+class B : A() {
+    fun <I : B> g(b: B): I = b.f() /* need to prohibit it somehow */
+}
+
+fun test(b: B) {
+    b.f() /* substitute <B> */
+}
+```
+
+Looks like direct approach only creates problems but does not clearly solve any.
 
 ### Magic implementation
 
@@ -242,10 +402,6 @@ TODO
 TODO
 
 ## Example implementations
-
-### Java
-
-TODO
 
 ### Swift
 
@@ -262,5 +418,9 @@ TODO
 ## Magic Kotlin prototype
 
 https://github.com/winter-yuki/kotlin/pull/2
+
+TODO
+
+## Other design questions
 
 TODO
