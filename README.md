@@ -13,27 +13,37 @@ Links:
 
 A **self-type** refers to the type on which a method is called (more formally called the receiver).
 
+We will use `Self(C)` type notation that refers to self-type to with class `C` (called *origin*) and has scope of class `C`.
+
 ### Return position
 
 ```kotlin
 abstract class A {
     // `this` of `A` should be assignable to `Self(A)`
     fun a(): Self = this // (this_is_self) - label to refer this example later
-    fun b(): Self = apply {}
+    fun b(): Self = apply {} // (class_is_self)
 
     abstract fun c(): Self
 }
 
 class B : A() {
     // `Self(B)` should be subtype of `Self(A)` to satisfy overriding conditions
-    override fun c(): Self = null!!
+    override fun c(): Self = null!! // (self_return_override)
 
     // `Self` of the same object should be assignable to `Self(B)`
-    fun d(): Self = a()
+    fun d(): Self = a() // (self_a_assign_self_b)
+
+    fun e(): Self {
+        // It is natural behavior because `Self(A)` has scope of `A`
+        val b: B = a() // (self_assign_origin)
+
+        val self: Self = b() // (denotable_self)
+        return self
+    }
 }
 
 fun test(a: A, b: B) {
-    b.a()     // scope of type B
+    b.a()     // scope of type B (self_to_receiver)
     b.a().b() // scope of type B
     a.a()     // scope of type A
 }
@@ -46,7 +56,7 @@ abstract class A {
     fun a(): Self = this
 
     // Should not be possible to return Self of other object
-    fun f(x: B): Self = x.a()
+    fun f(x: B): Self = x.a() // (foreign_self)
 }
 
 abstract class B : A()
@@ -63,6 +73,7 @@ fun test(b: B, c: C) {
 Also it may be unsafe to create new objects:
 
 ```kotlin
+// (unsafe_create)
 open class A {
     // 1) Creating instances OF the opened class cause problems
     fun f(): Self = A()
@@ -89,6 +100,7 @@ fun test(q: Q, p: P) {
 It is possible to create object of final class if it exists in the intersection type of `this`. Sealed class example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
 
 ```kotlin
+// (safe_create)
 sealed interface Data {
     data class One(var a: Int) : Data
 
@@ -182,10 +194,12 @@ interface Inv<T> {
 }
 
 abstract class A {
+    fun a(): Self = null!!
+
     abstract fun f(): In<Self>
 
     fun g(): Out<Self> = object : Out<Self> {
-        override fun produce(): Self = this@A
+        override fun produce(): Self = this@A // or this@A.a()
     }
 }
 
@@ -254,11 +268,11 @@ fun test(a: A, b: B) {
 
 ## Motivation
 
-Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts.
+Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts. But they are useful in some popular patterns, so there can be reason to make them a language feature.
 
 ### Transformation chains
 
-The most common example of self-types application is abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a transformation chain of an immutable object (or use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
+The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a (monadic) transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
 
 ```kotlin
 open class Lazy<out T>(val computation: () -> T) {
@@ -341,7 +355,7 @@ fun test(betterTree: BetterNode) {
 
 There are three approaches to implement self-type behavior:
 1. Direct implementation - using recursive generics under the hood
-2. Magic implementation - Self is a special type with it's own behavior
+2. Magic implementation - `Self` is a special type with it's own behavior
 3. Implementation via *abstract type members* (*associated types*)
 
 ### Direct implementation
@@ -395,7 +409,60 @@ Looks like direct approach only creates problems but does not clearly solve any.
 
 ### Magic implementation
 
-TODO
+Another approach is to introduce special `Self` type and write down rules of its behavior. General idea is to substitute receiver type instead of `Self` during resolve.
+
+It looks like using implicit generic parameters for methods and receiver type substitution similar to direct approach. However, magic `Self` type gives much more control to permit or prohibit different behaviors. This analogy is not an implementation guide, but an idea that self-types from this point of view do not bring us out from existing type system kind.
+
+#### (self_return_override)
+
+To support override for methods with self-type in the return position the following rule should be used:
+```
+B <: A => Self(B) <: Self(A)
+```
+
+#### (this_is_self)
+
+We should change type of `this` (e.g. from `A` class) from `A` to `Self(A)`. We are not allowed to use rule `A <: Self(A)` instead because of reasons that will be discussed in the **(foreign_self)** section.
+
+#### (self_assign_origin)
+
+It should be possible to assign `Self(A)` to its origin (`A`). So we add rule:
+```
+B <: A => Self(B) <: A
+```
+
+#### (class_is_self)
+
+Dispatch receiver in class (`C`) should have `Self(C)` type.
+
+#### (self_to_receiver)
+
+When method from class `A` (`B <: A`) that returns self-type is called on `b: B`, `Self(A)` should be replaced with `B` in the resolve phase.
+
+Note that we do not replace `Self(A)` with `Self(B)` here. There are important reasons for it that will be discussed in the **(foreign_self)** section.
+
+#### (self_a_assign_self_b)
+
+Let `b: () -> Self` be a method of class `B`, `B <: A`. Let `a: () -> Self` be a method of class `A`. When `a` is called inside declaration of `B` on the current object, `Self(A)` should be replaced with `Self(B)` (note: not `B`).
+
+#### (foreign_self), (unsafe_create)
+
+Remember that it is mistake to allow `Self` from other object be assignable to `Self` of the currently declared one. Note that rules described above do not allow this:
+* Rule `B <: A => B <: Self(A)` does not exist
+* All self-types turn into self-types only if method was called on `this` of current class declaration
+* Any other self-types turn into the type of a receiver
+* Self-type is not denotable outside the class declaration
+
+#### (safe_create)
+
+This usecase can be solved by its own rule:
+```
+is_final A, A \in intersection this => A <: Self(A)
+```
+
+#### Generic positions
+
+For generic positions everything is the same.
 
 ### Abstract type members
 
