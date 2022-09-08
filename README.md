@@ -9,11 +9,142 @@ Links:
 6. [Self type in java plugin](https://github.com/manifold-systems/manifold)
 7. [`Self` name resolve considerations (ru)](https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2)
 
-## Definition
-
-A **self-type** refers to the type on which a method is called (more formally called the receiver).
+A **self-type** refers to the type on which a method is called (more formally called the *receiver*).
 
 We will use `Self(C)` type notation that refers to self-type to with class `C` (called *origin*) and has scope of class `C`.
+
+
+## Motivation
+
+Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts. But they are useful in some popular patterns, so there can be reason to make them a language feature.
+
+Possibility to use `Self` in all this positions will be discussed in the next section.
+
+### Transformation chains
+
+The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a (monadic) transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
+
+```kotlin
+abstract class Lazy<T>(val computation: () -> T) {
+    abstract protected fun create(computation: () -> T): Self
+    fun copy(): Self = create { computation() }
+}
+
+abstract class LazyNumber<T : Number>(computation: () -> T) : Lazy<T>(computation) {
+    fun shortify(): Self = create { computation().toShort() }
+}
+
+class LazyInt(computation: () -> Int) : LazyNumber<Int>(computation) {
+    // Self new instance in final class - ok
+    override fun create(computation: () -> Int): Self = LazyInt(computation)
+    fun add(n: Int): Self = create { computation() + n }
+}
+
+fun test() {
+    LazyInt { 42 }
+        .copy()
+        .shortify()
+        .add(13)
+        .computation()
+}
+```
+
+Sealed class implementation from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
+```kotlin
+sealed interface Data {
+    data class One(var a: Int) : Data
+    data class Two(var a: Int, var b: Int) : Data
+
+    // Create final class from `this` type intersection - ok
+    fun copy(): Self = when (this) {
+        is One -> One(a)
+        is Two -> Two(a, b)
+    }
+}
+
+fun test() {
+    val a = Data.One(1)
+    val b = a.copy() // has type of `A`
+}
+```
+
+Fluent assertions api [this](https://github.com/google/truth/blob/master/core/src/main/java/com/google/common/truth/Subject.java) and [this](https://github.com/assertj/assertj/blob/main/assertj-core/src/main/java/org/assertj/core/api/AbstractAssert.java) are real-world examples of transformation chains.
+
+### Observer pattern
+
+```kotlin
+abstract class AbstractObservable {
+    private val observers = mutableListOf<(Self) -> Unit>
+
+    // Self in the input `in` generic position - ok
+    fun observe(observer: (Self) -> Unit) {
+        observers += observer
+    }
+
+    protected fun notify() {
+        observers.forEach { observer ->
+            observer(this)
+        }
+    }
+}
+
+class Element : AbstractObservable() {
+    var color: Color = Color.Purple
+        set(value: Color) {
+            param = value
+            notify()
+        }
+}
+
+fun test() {
+    val element = Element().apply {
+        observe {
+            printLn("New color = ${it.color}")
+        }
+    }
+    element.color = Color.Blue
+}
+```
+
+### Recursive containers
+
+```kotlin
+// Return `out` generic position - ok
+abstract class Node(val children: List<Self>)
+
+// Constructor position - ok
+class BetterNode(children: List<Self> = emptyList()) : Node(children /* ok - covariant */) {
+    fun doTheBest() = printLn(42)
+}
+
+fun test() {
+    val betterTree = BetterNode(/* expected List<BetterNode> */ listOf(
+        BetterNode(),
+        BetterNode(listOf(BetterNode()))
+    ))
+    betterTree.children
+        .flatMap { it.children }
+        .forEach { it.doTheBest() }
+}
+```
+
+
+## Self-type usage
+
+Let
+```kotlin
+fun interface In<in T> {
+    fun accept(x: T)
+}
+
+fun interface Out<out T> {
+    fun produce(): T
+}
+
+fun interface Inv<T> {
+    fun id(x: T): T
+}
+```
 
 ### Return position
 
@@ -55,7 +186,7 @@ The following example should not compile to avoid type system hole:
 abstract class A {
     fun a(): Self = this
 
-    // Should not be possible to return Self of other object
+    // Should not be possible to return Self of an other object
     fun f(x: B): Self = x.a() // (foreign_self)
 }
 
@@ -130,6 +261,7 @@ interface Comparable {
 }
 
 abstract class A(val a: Int) : Comparable {
+    // The only possible bound for Self is useless Comparable
     override fun compareTo(other: Self): Int = a.compareTo(other.a)
 }
 
@@ -153,13 +285,12 @@ interface Comparable<in T> {
 
 interface Item<T : Item<T>> : Comparable<T> {
     val x: Int
+
+    // Need to have explicitly declared bound (in generic parameter)
+    override fun compareTo(other: A): Int = x - other.x
 }
 
-abstract A : Item<A>
-
-class B : A() {
-    override fun fun compareTo(other: A): Int = x - other.x
-}
+class A : Item<A>
 
 fun <T : Item<T>> sortItems(items: List<Item<T>>)
 ```
@@ -176,75 +307,69 @@ interface Item : Comparable {
 fun <T : Item> sortItems(items: List<Item<T>>)
 ```
 
+So the only possibility is to hide recursive generic parameter in some positions. But generic parameter that occasionally appears is too much.
+
 ### Return generic position
 
-`Self` can only be used in `out` position:
-
 ```kotlin
-interface In<in T> {
-    fun accept(x: T)
-}
-
-interface Out<out T> {
-    fun produce(): T
-}
-
-interface Inv<T> {
-    fun id(x: T): T
-}
-
 abstract class A {
     fun a(): Self = null!!
 
     abstract fun f(): In<Self>
 
+    // Safe to create object with `Self` in generic position
     fun g(): Out<Self> = object : Out<Self> {
+        // Self here relates to A, not to Out. Mb write Self@A?
         override fun produce(): Self = this@A // or this@A.a()
     }
+
+    abstract fun h3(): In<Self>
 }
 
-class B : A() {
+class B(...) : A() {
     fun b() = Unit
 
     fun f(): In<Self> = object : In<Self> {
+        // Foreign `Self` in the input position also should be prohibited
         override fun accept(x: Self) {
             // expect x to be of type B
             x.b()
         }
     }
 
-    fun h(): Inv<Self> = object : Inv<Self> {
-        fun id(x: Self): Self {
-            // expect x to be of type B
-            x.b()
-        }
-    }
+    // Ok to return existing object that relies on B (see `Constructor position` section)
+    fun h1(): In<Self> = inInstance
+    fun h2(): Inv<Self> = invInstance
+
+    // Overriding is not possible without rule B <: A => Self(A) <: Self(B)
+    // But it is good, because inInstance relies on B and overriding is unsafe
+    override fun h3(): In<Self> = inInstance
+
+    fun h4(): MutableList<Self> = mutableListOf(this, this)
 }
 
 fun test(a: A, b: B) {
     a.f() /* In<A> */ .accept(/* A is required instead of B */)
     b.g().produce() /* ok, common return position mechanics */
+
+    b.h1().accept(b /* B is expected - ok */)
+    val bb: B = b.h2().id(b)
+
+    a.h3().accept(a /* ERROR: B is expected */)
+
+    val bs: MutableList<B> = b.h4()
+    bs.add(b)
+    bs.first().b()
 }
 ```
 
 ### Input generic position
 
-`Self` can only be used in `in` position:
+No overriding here is possible by default, if we consider that `Self(A) != Self(B)`. And it makes `out` and `inv` positions safe.
+
+But for `in` position this restriction does not make sense in terms of safety and it is valid to resolve `Self(B)` in the input `in` generic position as `Self(A)`.
 
 ```kotlin
-interface In<in T> {
-    fun accept(x: T)
-}
-
-interface Out<out T> {
-    fun produce(): T
-}
-
-// Similar to Out here
-interface Inv<T> {
-    fun id(x: T): T
-}
-
 abstract class A {
     // ok, common return position mechanics (accepting argument instead of return)
     fun f(x: In<Self>) = x.accept(this)
@@ -254,6 +379,7 @@ abstract class A {
 class B : A() {
     fun b() = Unit
 
+    // Override prohibited: Self(B) != Self(A)
     override fun g(x: Out<Self>) {
         // expect x to be of type B
         x.produce().b()
@@ -266,90 +392,55 @@ fun test(a: A, b: B) {
 }
 ```
 
-## Motivation
-
-Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts. But they are useful in some popular patterns, so there can be reason to make them a language feature.
-
-### Transformation chains
-
-The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a (monadic) transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
+### Constructor position
 
 ```kotlin
-open class Lazy<out T>(val computation: () -> T) {
-    fun clone(): Self = Lazy { computation() }
-}
-
-open class LazyNumber<out T : Number>(computation: () -> T) : Lazy<T>(computation) {
-    fun shortify(): Self = LazyNumber { computation().shortValue() }
-}
-
-class LazyInt(computation: () -> Int) : LazyNumber<Int>(computation) {
-    fun add(n: Int): Self = LazyInt { computation() + n }
-}
+open class A(val x: Self?)
+class B(x: Self?) : A(x /* subtyping - ok */)
 
 fun test() {
-    LazyInt { 42 }
-        .clone()
-        .shortify()
-        .add(13)
-        .computation()
+    val a = A(/* requires A? */ A(null))
+    val b = B(/* requires B? */ B(null))
 }
 ```
 
-Fluent assertions api [this](https://github.com/google/truth/blob/master/core/src/main/java/com/google/common/truth/Subject.java) and [this](https://github.com/assertj/assertj/blob/main/assertj-core/src/main/java/org/assertj/core/api/AbstractAssert.java) are real-world examples of transformation chains.
-
-### Observer pattern
+Only `out` generic position is allowed.
 
 ```kotlin
-abstract AbstractObservable {
-    private val observers = mutableListOf<(Self) -> Unit>
-
-    // Self in the input generic position - ok
-    fun observe(observer: (Self) -> Unit) {
-        observers += observer
-    }
-
-    protected fun notify() {
-        observers.forEach { observer ->
-            observer(this)
-        }
-    }
-}
-
-class Element : Observable {
-    var color: Color = Color.Purple
-        set(value: Color) {
-            param = value
-            notify()
-        }
-}
+open class A(val x: Out<Self>?)
+class B(x: Out<Self>?) : A(x /* ok - covariant */)
 
 fun test() {
-    val element = Element().apply {
-        observe {
-            printLn("New color = ${it.color}")
-        }
-    }
-    element.color = Color.Blue
+    val a = A { A(null) }
+    val b = B { B(null) }
 }
 ```
-
-### Recursive containers
 
 ```kotlin
-// Return out generic position - ok
-open class Node(val children: List<Self>)
-
-class BetterNode(children: List<BetterNode>) : Node(children) {
-    fun doTheBest() = printLn(42)
+abstract class A {
+    abstract val x: Out<Self>?
 }
 
-fun test(betterTree: BetterNode) {
-    betterTree.children
-        .flatMap { it.children }
-        .forEach { it.doTheBest() }
+class B(override val x: Out<Self>?)
+```
+
+Other projections are unsafe in open classes and prohibited by subtyping:
+
+```kotlin
+open class A(val x: In<Self>)
+class B(x: In<Self>) : A(x /* error - contravariant */)
+// or
+abstract class A {
+    abstract val x: In<Self>
+}
+class B(override val x: In<Self> /* error - contravariant */)
+
+fun test() {
+    val a: A = B { it as B }
+    a.x.accept(a /* ERROR: b expected */)
 }
 ```
+
 
 ## Implementation
 
