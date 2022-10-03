@@ -11,14 +11,14 @@ Links:
 
 A **self-type** refers to the type on which a method is called (more formally called the *receiver*).
 
-We will use `Self(C)` type notation that refers to self-type to with class `C` (called *origin*) and has scope of class `C`.
+We will use `Self(C)` type notation denoting self-type that is declared in class `C` (called *origin*) and has scope of class `C`.
 
 
 ## Motivation
 
-Self-types can be emulated by weird boilerplate code with recursive generics and/or some additional casts. But they are useful in some popular patterns, so there can be reason to make them a language feature.
+Self-types can be emulated with weird boilerplate code using recursive generics and/or some additional casts. But they are needed in some useful patterns, so there can be a reason to make them a language feature. Moreover, self-types bypasses are enough cumbersome to make less suitable design choices in some cases.
 
-Possibility to use `Self` in all this positions will be discussed in the next section.
+Possibility to use `Self` in different positions will be discussed in the next section.
 
 ### Transformation chains
 
@@ -35,7 +35,7 @@ abstract class LazyNumber<T : Number>(computation: () -> T) : Lazy<T>(computatio
 }
 
 class LazyInt(computation: () -> Int) : LazyNumber<Int>(computation) {
-    // Self new instance in final class - ok
+    // Create final class from `this` type intersection - ok (safe_create)
     override fun create(computation: () -> Int): Self = LazyInt(computation)
     fun add(n: Int): Self = create { computation() + n }
 }
@@ -55,7 +55,7 @@ sealed interface Data {
     data class One(var a: Int) : Data
     data class Two(var a: Int, var b: Int) : Data
 
-    // Create final class from `this` type intersection - ok
+    // Create final class from `this` type intersection - ok (safe_create)
     fun copy(): Self = when (this) {
         is One -> One(a)
         is Two -> Two(a, b)
@@ -64,7 +64,7 @@ sealed interface Data {
 
 fun test() {
     val a = Data.One(1)
-    val b = a.copy() // has type of `A`
+    val b: Data.One = a.copy() // (self_to_receiver)
 }
 ```
 
@@ -76,7 +76,7 @@ Fluent assertions api [this](https://github.com/google/truth/blob/master/core/sr
 abstract class AbstractObservable {
     private val observers = mutableListOf<(Self) -> Unit>
 
-    // Self in the input `in` generic position - ok
+    // Self in the input `in` generic position - ok (input_in_generic)
     fun observe(observer: (Self) -> Unit) {
         observers += observer
     }
@@ -99,17 +99,22 @@ class Element : AbstractObservable() {
 fun test() {
     val element = Element().apply {
         observe {
-            printLn("New color = ${it.color}")
+            println("New color = ${it.color}")
         }
     }
-    element.color = Color.Blue
+    element.color = Color.Blue // Observer prints new color here
+    element.observe {
+        // Using other Element is mistake here,
+        // `it` should have `Element` type to avoid this
+        println("New color with mistake = ${otherElement.color})
+    }
 }
 ```
 
 ### Recursive containers
 
 ```kotlin
-// Return `out` generic position - ok
+// Constructor position - ok
 abstract class Node(val children: List<Self>)
 
 // Constructor position - ok
@@ -165,7 +170,7 @@ class B : A() {
     fun d(): Self = a() // (self_a_assign_self_b)
 
     fun e(): Self {
-        // It is natural behavior because `Self(A)` has scope of `A`
+        // It is natural behavior because `Self(C)` has scope of `C`
         val b: B = a() // (self_assign_origin)
 
         val self: Self = b() // (denotable_self)
@@ -247,7 +252,7 @@ sealed interface Data {
 
 fun test() {
     val a = Data.One(1)
-    val b = a.copy() // has type of `A`
+    val b = a.copy() // has type of `A` (self_to_receiver)
 }
 ```
 
@@ -341,7 +346,8 @@ class B(...) : A() {
     fun h1(): In<Self> = inInstance
     fun h2(): Inv<Self> = invInstance
 
-    // Overriding is not possible without rule B <: A => Self(A) <: Self(B)
+    // Overriding is not possible (variance subtyping) without contravariant rule
+    // B <: A => Self(A) <: Self(B).
     // But it is good, because inInstance relies on B and overriding is unsafe
     override fun h3(): In<Self> = inInstance
 
@@ -372,7 +378,7 @@ But for `in` position this restriction does not make sense in terms of safety an
 ```kotlin
 abstract class A {
     // ok, common return position mechanics (accepting argument instead of return)
-    fun f(x: In<Self>) = x.accept(this)
+    fun f(x: In<Self>) = x.accept(this) // (input_in_generic)
     abstract fun g(x: Out<Self>)
 }
 
@@ -399,8 +405,8 @@ open class A(val x: Self?)
 class B(x: Self?) : A(x /* subtyping - ok */)
 
 fun test() {
-    val a = A(/* requires A? */ A(null))
-    val b = B(/* requires B? */ B(null))
+    val a = A(/* requires `A?` */ A(null))
+    val b = B(/* requires `B?` */ B(null))
 }
 ```
 
@@ -444,7 +450,7 @@ fun test() {
 
 ## Implementation
 
-There are three approaches to implement self-type behavior:
+There are three approaches to implement self-types:
 1. Direct implementation - using recursive generics under the hood
 2. Magic implementation - `Self` is a special type with it's own behavior
 3. Implementation via *abstract type members* (*associated types*)
@@ -500,7 +506,7 @@ Looks like direct approach only creates problems but does not clearly solve any.
 
 ### Magic implementation
 
-Another approach is to introduce special `Self` type and write down rules of its behavior. General idea is to substitute receiver type instead of `Self` during resolve.
+Another approach is to introduce special `Self` type and write down rules of its behavior. General idea is to substitute receiver type instead of `Self` on function call resolve.
 
 It looks like using implicit generic parameters for methods and receiver type substitution similar to direct approach. However, magic `Self` type gives much more control to permit or prohibit different behaviors. This analogy is not an implementation guide, but an idea that self-types from this point of view do not bring us out from existing type system kind.
 
@@ -528,7 +534,7 @@ Dispatch receiver in class (`C`) should have `Self(C)` type.
 
 #### (self_to_receiver)
 
-When method from class `A` (`B <: A`) that returns self-type is called on `b: B`, `Self(A)` should be replaced with `B` in the resolve phase.
+When method from class `A` (`B <: A`) that returns self-type is called on `b: B`, `Self(A)` should be replaced with `B` at the resolve phase.
 
 Note that we do not replace `Self(A)` with `Self(B)` here. There are important reasons for it that will be discussed in the **(foreign_self)** section.
 
