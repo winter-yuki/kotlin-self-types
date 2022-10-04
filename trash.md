@@ -6,19 +6,7 @@
 
 
 
-
-
-
-
-
-
-
 Regarding Java interoperability, I get an impression from the forum discussions above that self types are much like (non)nullable types: both introduce an additional constraint on a type not expressible in bytecode that can be violated by an overriding Java method.
-
-
-
-
-
 
 
 
@@ -44,62 +32,6 @@ TODO Stream API examples
 TODO a lot of recursive generics [assertj-core](https://github.com/assertj/assertj-core/tree/2c5f011d3c99d86f5d42a743a28238440729ae7f/src/main/java/org/assertj/core/api)
 
 TODO [example interpreter](https://youtrack.jetbrains.com/issue/KT-49752/Regression-in-method-return-type-inference-IllegalStateException-Expected-some-types)
-
-### Input position
-
-```kotlin
-interface Comparable<in T> {
-    fun compareTo(other: T): Int
-}
-```
-
-```kotlin
-class MyClass : Comparable<MyClass> { ... }
-```
-
-```kotlin
-interface Item<T : Item<T>> : Comparable<T> {
-   fun compareTo(other: T): Int
-   fun doSomethingElseWith(other: T)
-   ...
-}
-```
-
-And this pattern spread all over the code:
-```kotlin
-fun <T : Item<T>> sortItems(items: List<Item<T>>)
-```
-
-Proper solution can be the following:
-```kotlin
-interface Item : Comparable {
-   fun compareTo(other: Self): Int
-   fun doSomethingElseWith(other: Self)
-   ...
-}
-
-fun <T : Item> sortItems(items: List<Item<T>>)
-```
-
-### Out position
-
-```kotlin
-sealed class Data {
-    data class One(var a: Int) : Data()
-    data class Two(var a: Int, var b: Int) : Data()
-
-    // this shall typecheck
-    fun copy(): Self = when(this) {
-        is One -> One(a) // no cast needed here, because of smart-cast on `this`
-        is Two -> Two(a, b)
-    }
-}
-
-fun test() {
-    val a = One(1)
-    val b = a.copy() // has type of `A`
-}
-```
 
 <!-- ### Handy architectural patterns
 
@@ -155,8 +87,6 @@ TODO -->
 
 ### Swift
 
-* https://docs.swift.org/swift-book/ReferenceManual/Types.html#grammar_self-type
-* https://www.swiftbysundell.com/tips/using-self-to-refer-to-enclosing-types/
 
 Note: Protocols in Swift are not ordinary types as interfaces in Kotlin (this can matter).
 
@@ -242,19 +172,6 @@ protocol H {
 //     func g(xs: Array<I>) -> Array<I> { return xs }
 // }
 
-final class J: H {
-    func g(xs: Array<J>) -> Array<J> { return xs }
-}
-```
-
-`Self` can also be used in any position of extension method declaration aliasing extended type:
-```swift
-extension PublishingStep {
-    static func group(_ steps: [Self]) -> Self {
-        Self(...)
-    }
-}
-```
 
 ### Python
 

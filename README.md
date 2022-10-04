@@ -400,6 +400,8 @@ fun test(a: A, b: B) {
 
 ### Constructor position
 
+Only `out` generic position is allowed.
+
 ```kotlin
 open class A(val x: Self?)
 class B(x: Self?) : A(x /* subtyping - ok */)
@@ -407,18 +409,6 @@ class B(x: Self?) : A(x /* subtyping - ok */)
 fun test() {
     val a = A(/* requires `A?` */ A(null))
     val b = B(/* requires `B?` */ B(null))
-}
-```
-
-Only `out` generic position is allowed.
-
-```kotlin
-open class A(val x: Out<Self>?)
-class B(x: Out<Self>?) : A(x /* ok - covariant */)
-
-fun test() {
-    val a = A { A(null) }
-    val b = B { B(null) }
 }
 ```
 
@@ -502,7 +492,7 @@ fun test(b: B) {
 }
 ```
 
-Looks like direct approach only creates problems but does not clearly solve any.
+Looks like direct approach only creates problems but does not clearly solve any (except Java interoperability).
 
 ### Magic implementation
 
@@ -561,17 +551,153 @@ is_final A, A \in intersection this => A <: Self(A)
 
 For generic positions everything is the same.
 
+#### JVM interoperability
+
+Self-type in byte code should be represented as it's origin type plus kotlin metadata.
+
+Overriding methods with self-types in java should be prohibited:
+```kotlin
+// Kotlin
+open class A {
+    open fun f(): Self = this
+}
+class B : A()
+
+// Java
+class C : A {
+    @Override
+    B f() { return B() }
+    void g() {}
+}
+
+// Kotlin
+fun test(c: C) {
+    c.f() /* scope of C */ .g() // ERROR: expected C, got B
+}
+```
+
+It could be done in several ways:
+* Make ctors of class with self-types synthetic
+   * Adding self-type breaks source compatibility
+* Make methods with self-types synthetic
+   * Refactoring A -> Self breaks source compatibility
+
 ### Abstract type members
 
 TODO
 
-## Example implementations
+## Other languages experience
 
 ### Swift
 
-TODO
+* https://docs.swift.org/swift-book/ReferenceManual/Types.html#grammar_self-type
+* https://www.swiftbysundell.com/tips/using-self-to-refer-to-enclosing-types/
+* https://docs.swift.org/swift-book/LanguageGuide/Generics.html
+
+Plain return positions behave as expected. Self-type from the other object is prohibited:
+`cannot convert return expression of type 'C' to return type 'Self'`.
+
+```swift
+protocol A {
+    func f() -> Self
+    func g() -> Self
+}
+
+class B: A {
+    func f() -> Self { print("B.f"); return h() }
+    func g() -> Self { print("B.g"); return self }
+    func h() -> Self { print("B.h"); return self }
+}
+
+class C: B {
+    override func g() -> Self { print("C"); return f() }
+}
+
+let c = C()
+c.f().h().g()
+// (B.f, B.h), (B.h), (C.g, B.f, B.h)
+```
+
+But in other positions `Self` is available only in protocols and class declaration should use itself instead of `Self`:
+
+```swift
+// Self is not available as a input parameter in the class
+// class D {
+//     func id(x: Self) -> Self { return x }
+// }
+
+protocol E {
+    func f(x: Self) -> Self
+}
+
+// error: protocol 'E' can only be used as a generic constraint because it has Self or associated type requirements
+// func test(x: E) {}
+
+class F: E {
+    // x is not Self anymore
+    // func f(x: F) -> Self { return x }
+
+    func f(x: F) -> Self { return self }
+}
+
+class G: F {
+    // x type is already fixed in F
+    // override func f(x: H) -> Self { return self }
+    override func f(x: F) -> Self { return self }
+}
+
+protocol H {
+    func g(xs: Array<Self>) -> Array<Self>
+}
+
+// class I: H {
+//     // protocol 'H' requirement 'g(xs:)' cannot be satisfied by a non-final class
+//     // ('I') because it uses 'Self' in a non-parameter, non-result type position
+//     func g(xs: Array<I>) -> Array<I> { return xs }
+// }
+
+final class J: H {
+    func g(xs: Array<J>) -> Array<J> { return xs }
+}
+```
+
+`Self` can also be used in any position of extension method declaration aliasing extended type:
+```swift
+extension PublishingStep {
+    static func group(_ steps: [Self]) -> Self {
+        Self(...)
+    }
+}
+```
+
+Also `Swift` supports associated types and they can be used to achieve similar behavior:
+```swift
+protocol A {
+    associatedtype S
+    func f() -> S
+    func g(x: S)
+    func h() -> Array<S>
+}
+
+class B : A {
+    func f() -> B { return self }
+    func g(x: B) {}
+    func h() -> Array<B> { return [self] }
+}
+
+class C : B {
+    override func f() -> C { return self }
+    // error: method does not override any method from its superclass
+    // override func g(x: C) {}
+    // error: method does not override any method from its superclass
+    // override func h() -> Array<C> { return [self, self] }
+}
+```
 
 ### Scala
+
+* https://docs.scala-lang.org/tour/abstract-type-members.html
+* https://github.com/lampepfl/dotty/issues/7374
 
 TODO
 
