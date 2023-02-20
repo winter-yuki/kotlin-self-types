@@ -9,53 +9,67 @@ Links:
 6. [Self type in java plugin](https://github.com/manifold-systems/manifold)
 7. [`Self` name resolve considerations (ru)](https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2)
 
-A **self-type** refers to the type on which a method is called (more formally called the *receiver*).
+A **self-type** in method signature refers to the type on which a method is called (more formally called the *receiver*).
 
-We will use `Self(C)` type notation denoting self-type that is declared in class `C` (called *origin*) and has scope of class `C`.
+We will use `Self(C)` type notation denoting self-type that refers to the subtype of class `C` (called *origin*) and has scope of class `C`.
 
 
 ## Motivation
 
-Self-types can be emulated with weird boilerplate code using recursive generics and/or some additional casts. But they are needed in some useful patterns, so there can be a reason to make them a language feature. Moreover, self-types bypasses are enough cumbersome to make less suitable design choices in some cases.
+Self-types can be emulated with weird boilerplate code using recursive generics and/or some additional casts. But they are needed in some useful patterns, so there can be a reason to make them a language feature. Moreover, self-types bypasses are enough cumbersome to make programmer choose less suitable design choices in some cases.
 
 Possibility to use `Self` in different positions will be discussed in the next section.
 
 ### Transformation chains
 
-The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a (monadic) transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful:
+The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful.
+
+#### Persistent data structures
+
+Modification methods of a persistent data structure do not modify a collection itself but create a modified new one. To modify such collections in fluent style using methods of the base classes, [recursive generics](http://web.archive.org/web/20130721224442/http:/passion.forco.de/content/emulating-self-types-using-java-generics-simplify-fluent-api-implementation) should be used, alternatively derived class should declare [abstract overrides](https://github.com/Kotlin/kotlinx.collections.immutable/blob/d7b83a13fed459c032dab1b4665eda20a04c740f/core/commonMain/src/ImmutableList.kt#L66) for all modification methods with more specific return type.
+
+However, recursive generics are cumbersome and corrupt code that uses them:
 
 ```kotlin
-abstract class Lazy<T>(val computation: () -> T) {
-    abstract protected fun create(computation: () -> T): Self
-    fun copy(): Self = create { computation() }
+interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> : Collection<E> {
+    fun add(value: @UnsafeVariance E): Self
+    fun clear(): Self
 }
 
-abstract class LazyNumber<T : Number>(computation: () -> T) : Lazy<T>(computation) {
-    fun shortify(): Self = create { computation().toShort() }
-}
+fun <E, Self> PersistentCollection<E, Self>.addAll(xs: Iterable<E>): PersistentCollection<E, Self>
+        where Self : PersistentCollection<E, Self> =
+    xs.fold(this) { acc, x -> acc.add(x) }
 
-class LazyInt(computation: () -> Int) : LazyNumber<Int>(computation) {
-    // Create final class from `this` type intersection - ok (safe_create)
-    override fun create(computation: () -> Int): Self = LazyInt(computation)
-    fun add(n: Int): Self = create { computation() + n }
-}
-
-fun test() {
-    LazyInt { 42 }
-        .copy()
-        .shortify()
-        .add(13)
-        .computation()
+interface PersistentList<out E, out Self : PersistentList<E, Self>> : PersistentCollection<E, Self> {
+    fun sublist(fromIndex: Int, toIndex: Int): Self
 }
 ```
 
-Sealed class implementation from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
+Having self-type feature this code looks much simpler:
+
+```kotlin
+interface PersistentCollection<out E> : Collection<E> {
+    fun add(value: @UnsafeVariance E): Self
+    fun clear(): Self
+}
+
+fun <E> PersistentCollection<E>.addAll(xs: Iterable<E>): PersistentCollection<E> =
+    xs.fold(this) { acc, x -> acc.add(x) }
+
+interface PersistentList<out E> : PersistentCollection<E> {
+    fun sublist(fromIndex: Int, toIndex: Int): Self
+}
+```
+
+Also, there is no compiler control over such abstract overrides, so developer can easily add new modification method in the base class and forget to add abstract overrides to all derived classes.
+
+It is also useful to be able to create instances in the base class, e.g. to provide default implementation (example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494)):
+
 ```kotlin
 sealed interface Data {
     data class One(var a: Int) : Data
     data class Two(var a: Int, var b: Int) : Data
 
-    // Create final class from `this` type intersection - ok (safe_create)
     fun copy(): Self = when (this) {
         is One -> One(a)
         is Two -> Two(a, b)
@@ -64,72 +78,84 @@ sealed interface Data {
 
 fun test() {
     val a = Data.One(1)
-    val b: Data.One = a.copy() // (self_to_receiver)
+    val b: Data.One = a.copy()
 }
 ```
 
-Fluent assertions api [this](https://github.com/google/truth/blob/master/core/src/main/java/com/google/common/truth/Subject.java) and [this](https://github.com/assertj/assertj/blob/main/assertj-core/src/main/java/org/assertj/core/api/AbstractAssert.java) are real-world examples of transformation chains.
+#### Monadic computations
 
-### Observer pattern
+TODO
+
+### Abstract observable
 
 ```kotlin
-abstract class AbstractObservable {
-    private val observers = mutableListOf<(Self) -> Unit>
+abstract class AbstractObservable<Self : AbstractObservable<Self>> {
+    private val observers = mutableListOf<(Self) -> Unit>()
 
-    // Self in the input `in` generic position - ok (input_in_generic)
     fun observe(observer: (Self) -> Unit) {
         observers += observer
     }
 
-    protected fun notify() {
+    private fun notifyObservers() {
         observers.forEach { observer ->
-            observer(this)
+            @Suppress("UNCHECKED_CAST")
+            observer(this as Self)
         }
     }
-}
 
-class Element : AbstractObservable() {
-    var color: Color = Color.Purple
-        set(value: Color) {
-            param = value
-            notify()
+    protected fun <V> observable(initialValue: V) =
+        object : ObservableProperty<V>(initialValue) {
+            override fun afterChange(property: KProperty<*>, oldValue: V, newValue: V) {
+                notifyObservers()
+            }
         }
 }
 
-fun test() {
+enum class Color {
+    Purple, Blue
+}
+
+class Element : AbstractObservable<Element>() {
+    var color: Color by observable(Color.Purple)
+}
+
+fun main() {
     val element = Element().apply {
-        observe {
+        observe { it: Element ->
+            // Having `it: AbstractObservable` here forces to use another
+            // reference to observable element. That is error-prone.
             println("New color = ${it.color}")
         }
     }
     element.color = Color.Blue // Observer prints new color here
-    element.observe {
-        // Using other Element is mistake here,
-        // `it` should have `Element` type to avoid this
-        println("New color with mistake = ${otherElement.color})
-    }
 }
 ```
 
 ### Recursive containers
 
 ```kotlin
-// Constructor position - ok
-abstract class Node(val children: List<Self>)
+abstract class Node<out T, out Self : Node<T, Self>>(val value: T, val children: List<Self>)
 
-// Constructor position - ok
-class BetterNode(children: List<Self> = emptyList()) : Node(children /* ok - covariant */) {
-    fun doTheBest() = printLn(42)
+class BetterNode<out T>(value: T, children: List<BetterNode<T>> = emptyList()) :
+    Node<T, BetterNode<T>>(value, children) {
+    fun doTheBest() = println(value)
 }
 
-fun test() {
-    val betterTree = BetterNode(/* expected List<BetterNode> */ listOf(
-        BetterNode(),
-        BetterNode(listOf(BetterNode()))
-    ))
+fun main() {
+    val betterTree = BetterNode(
+        2, listOf(
+            BetterNode(1),
+            BetterNode(
+                3, listOf(
+                    BetterNode(4),
+                    BetterNode(5, listOf(BetterNode(6)))
+                )
+            )
+        )
+    )
     betterTree.children
         .flatMap { it.children }
-        .forEach { it.doTheBest() }
+        .forEach { it.doTheBest() } // prints: 4 5
 }
 ```
 
