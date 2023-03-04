@@ -741,14 +741,48 @@ class CC : BB {
 
 ### Scala
 
+Self-types [mean](https://docs.scala-lang.org/tour/self-types.html) something entirely different in Scala 2. But there is an implemented [proposal](https://github.com/lampepfl/dotty/issues/7374) to introduce `This` type in Scala 3.
+
+* https://dl.acm.org/doi/10.1145/2888392
 * https://docs.scala-lang.org/tour/abstract-type-members.html
-* https://github.com/lampepfl/dotty/issues/7374
 
 TODO
 
-### Dynamic languages
+### Python
 
-TODO
+* https://peps.python.org/pep-0673/
+
+In Python `Self` type only in output position of methods is required.
+
+### TypeScript
+
+* https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types
+
+TS does not care at all:
+
+```typescript
+class Box {
+  content: string = "";
+  sameAs(other: this) {
+    return other.content === this.content;
+  }
+}
+
+class DerivedBox extends Box {
+  otherContent: string = "?";
+  sameAs(other: this) {
+    if (other.otherContent === undefined) {
+      console.log("TS type system is broken")
+    }
+    return other.otherContent === this.otherContent;
+  }
+}
+
+const base = new Box();
+const derived = new DerivedBox();
+(derived as Box).sameAs(base);
+// prints: TS type system is broken
+```
 
 ## Magic Kotlin prototype
 
