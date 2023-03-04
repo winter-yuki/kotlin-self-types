@@ -460,7 +460,6 @@ fun test() {
 }
 ```
 
-
 ## Implementation
 
 There are three approaches to implement self-types:
@@ -625,13 +624,17 @@ test = increment 42 :: Int
 
 ### Swift
 
-* https://docs.swift.org/swift-book/ReferenceManual/Types.html#grammar_self-type
-* https://www.swiftbysundell.com/tips/using-self-to-refer-to-enclosing-types/
-* https://docs.swift.org/swift-book/LanguageGuide/Generics.html
-* https://dl.acm.org/doi/pdf/10.1145/3360590
+* https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/#Self-Type
+* https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/#Associated-Types
+* Protocols implementation report: https://youtu.be/ctS8FzqcRug
+* Avoiding protocol problems with explicit witnesses: https://youtu.be/3BVkbWXcFS4
+* Using `Self` to refer an extended type: https://www.swiftbysundell.com/tips/using-self-to-refer-to-enclosing-types/
 
-Plain return positions behave as expected. Self-type from the other object is prohibited:
-`cannot convert return expression of type 'C' to return type 'Self'`.
+Compile example by: `$ swiftc examples.swift`.
+
+Swift protocols are like rust traits (limited type classes). Protocols can be conformed (implemented) by classes. A class can inherit one another.
+
+Plain return positions behave as expected. Self-type from the other object is prohibited.
 
 ```swift
 protocol A {
@@ -640,24 +643,25 @@ protocol A {
 }
 
 class B: A {
-    func f() -> Self { print("B.f"); return h() }
+    func f() -> Self { print("B.f"); return g() }
     func g() -> Self { print("B.g"); return self }
-    func h() -> Self { print("B.h"); return self }
+    // error: cannot convert return expression of type 'C' to return type 'Self'
+    // func h(c: C) -> Self { print("B.h"); return c.g() }
 }
 
 class C: B {
     override func g() -> Self { print("C"); return f() }
 }
 
-let c = C()
-c.f().h().g()
-// (B.f, B.h), (B.h), (C.g, B.f, B.h)
+func test1(c: C) {
+    c.f().g()
+}
 ```
 
 But in other positions `Self` is available only in protocols and class declaration should use itself instead of `Self`:
 
 ```swift
-// Self is not available as a input parameter in the class
+// error: covariant 'Self' or 'Self?' can only appear as the type of a property, subscript or method result; did you mean 'D'?
 // class D {
 //     func id(x: Self) -> Self { return x }
 // }
@@ -666,13 +670,10 @@ protocol E {
     func f(x: Self) -> Self
 }
 
-// error: protocol 'E' can only be used as a generic constraint because it has Self or associated type requirements
-// func test(x: E) {}
+// error: use of protocol 'E' as a type must be written 'any E'
+// func test2(x: E) {}
 
 class F: E {
-    // x is not Self anymore
-    // func f(x: F) -> Self { return x }
-
     func f(x: F) -> Self { return self }
 }
 
@@ -683,16 +684,23 @@ class G: F {
 }
 
 protocol H {
+    func f() -> Array<Self>
     func g(xs: Array<Self>) -> Array<Self>
 }
 
 // class I: H {
-//     // protocol 'H' requirement 'g(xs:)' cannot be satisfied by a non-final class
-//     // ('I') because it uses 'Self' in a non-parameter, non-result type position
-//     func g(xs: Array<I>) -> Array<I> { return xs }
+    // error: covariant 'Self' or 'Self?' can only appear at the top level of method result type
+    // func f() -> Array<Self> { return Array() }
+
+    // error: covariant 'Self' or 'Self?' can only appear at the top level of method result type
+    // func f() -> Array<Self> { return Array() }
+
+    // error: covariant 'Self' or 'Self?' can only appear at the top level of method result type
+    // func g(xs: Array<I>) -> Array<Self> { return Array() }
 // }
 
 final class J: H {
+    func f() -> Array<J> { return Array() }
     func g(xs: Array<J>) -> Array<J> { return xs }
 }
 ```
@@ -706,27 +714,28 @@ extension PublishingStep {
 }
 ```
 
-Also `Swift` supports associated types and they can be used to achieve similar behavior:
+Also `Swift` supports associated types and they can be used to achieve similar behavior but one for one-level hierarchy:
 ```swift
-protocol A {
+protocol AA {
     associatedtype S
     func f() -> S
     func g(x: S)
     func h() -> Array<S>
 }
 
-class B : A {
-    func f() -> B { return self }
-    func g(x: B) {}
-    func h() -> Array<B> { return [self] }
+class BB : AA {
+    typealias S = BB
+    func f() -> BB { return self }
+    func g(x: BB) {}
+    func h() -> Array<BB> { return [self] }
 }
 
-class C : B {
-    override func f() -> C { return self }
+class CC : BB {
+    override func f() -> CC { return self }
     // error: method does not override any method from its superclass
-    // override func g(x: C) {}
+    // override func g(x: CC) {}
     // error: method does not override any method from its superclass
-    // override func h() -> Array<C> { return [self, self] }
+    // override func h() -> Array<CC> { return [self, self] }
 }
 ```
 
