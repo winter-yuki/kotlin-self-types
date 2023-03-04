@@ -1,30 +1,23 @@
 package org.example
 
-abstract class Lazy<T, Self : Lazy<T, Self>>(val computation: () -> T) {
-    protected abstract fun create(computation: () -> T): Self
-    fun compute(): T = computation()
-    fun bind(kleisli: (T) -> Self): Self = create { kleisli(compute()).compute() }
+abstract class Lazy<out T, out Self : Lazy<T, Self>>(val computation: () -> T) {
+    protected val computed by lazy { computation() }
+
+    protected abstract fun create(computation: () -> @UnsafeVariance T): Self
+    fun compute(): T = computed
+    fun then(f: (T) -> @UnsafeVariance T): Self = create { f(compute()) }
 }
 
-class LazyImpl<T>(computation: () -> T) : Lazy<T, LazyImpl<T>>(computation) {
-    override fun create(computation: () -> T): LazyImpl<T> = LazyImpl(computation)
+class LazyImpl<out T>(computation: () -> T) : Lazy<T, LazyImpl<T>>(computation) {
+    override fun create(computation: () -> @UnsafeVariance T): LazyImpl<T> = LazyImpl(computation)
 }
 
-class LazyCollection<T>(computation: () -> T) :
-    Lazy<T, LazyCollection<T>>(computation), PersistentCollection<T, LazyCollection<T>>
-        where T : PersistentCollection<T, *> {
+class LazyCollection<out T, out C : PersistentCollection<T, C>>(computation: () -> C) :
+    Lazy<C, LazyCollection<T, C>>(computation), PersistentCollection<T, LazyCollection<T, C>> {
 
-    private val computed by lazy { compute() }
+    override fun add(value: @UnsafeVariance T): LazyCollection<T, C> = create { computed.add(value) }
 
-    override fun add(value: T): LazyCollection<T> = create {
-        @Suppress("UNCHECKED_CAST")
-        computed.add(value) as T
-    }
-
-    override fun clear(): LazyCollection<T> = create {
-        @Suppress("UNCHECKED_CAST")
-        computed.clear() as T
-    }
+    override fun clear(): LazyCollection<T, C> = create { computed.clear() }
 
     override val size: Int
         get() = compute().size
@@ -33,14 +26,18 @@ class LazyCollection<T>(computation: () -> T) :
 
     override fun iterator(): Iterator<T> = computed.iterator()
 
-    override fun containsAll(elements: Collection<T>): Boolean = computed.containsAll(elements)
+    override fun containsAll(elements: Collection<@UnsafeVariance T>): Boolean = computed.containsAll(elements)
 
-    override fun contains(element: T): Boolean = computed.contains(element)
+    override fun contains(element: @UnsafeVariance T): Boolean = computed.contains(element)
 
-    override fun create(computation: () -> T): LazyCollection<T> = LazyCollection(computation)
+    override fun create(computation: () -> @UnsafeVariance C): LazyCollection<T, C> = LazyCollection(computation)
 }
 
 fun main() {
-    TODO()
-//    LazyCollection<PersistentList<Int, *>> {  }
+    val xs = LazyCollection { PersistentListImpl(1, 2, 3) }
+        .clear()
+        .add(1).addAll(listOf(2, 3)).add(4)
+        .then { xs -> xs.forEach { x -> println(x) }; xs }
+    println("Hello world")
+    xs.compute()
 }

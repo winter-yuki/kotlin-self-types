@@ -5,8 +5,7 @@ interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> 
     fun clear(): Self
 }
 
-fun <E, Self> PersistentCollection<E, Self>.addAll(xs: Iterable<E>): PersistentCollection<E, Self>
-        where Self : PersistentCollection<E, Self> =
+fun <E, C : PersistentCollection<E, C>> C.addAll(xs: Iterable<E>): C =
     xs.fold(this) { acc, x -> acc.add(x) }
 
 interface PersistentList<out E, out Self : PersistentList<E, Self>> : PersistentCollection<E, Self> {

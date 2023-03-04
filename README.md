@@ -22,13 +22,13 @@ Possibility to use `Self` in different positions will be discussed in the next s
 
 ### Transformation chains
 
-The most common example of self-types application is an abstract builder pattern. But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful.
+The most common example of self-types application is an [abstract builder pattern](https://medium.com/@hazraarka072/fluent-builder-and-powering-it-up-with-recursive-generics-in-java-483005a85fcd). But in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). But if we want to construct a transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful.
 
 #### Persistent data structures
 
 Modification methods of a persistent data structure do not modify a collection itself but create a modified new one. To modify such collections in fluent style using methods of the base classes, [recursive generics](http://web.archive.org/web/20130721224442/http:/passion.forco.de/content/emulating-self-types-using-java-generics-simplify-fluent-api-implementation) should be used, alternatively derived class should declare [abstract overrides](https://github.com/Kotlin/kotlinx.collections.immutable/blob/d7b83a13fed459c032dab1b4665eda20a04c740f/core/commonMain/src/ImmutableList.kt#L66) for all modification methods with more specific return type.
 
-However, recursive generics are cumbersome and corrupt code that uses them:
+However, recursive generics are cumbersome and infect code that uses them:
 
 ```kotlin
 interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> : Collection<E> {
@@ -36,8 +36,7 @@ interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> 
     fun clear(): Self
 }
 
-fun <E, Self> PersistentCollection<E, Self>.addAll(xs: Iterable<E>): PersistentCollection<E, Self>
-        where Self : PersistentCollection<E, Self> =
+fun <E, C : PersistentCollection<E, C>> C.addAll(xs: Iterable<E>): C =
     xs.fold(this) { acc, x -> acc.add(x) }
 
 interface PersistentList<out E, out Self : PersistentList<E, Self>> : PersistentCollection<E, Self> {
@@ -53,7 +52,7 @@ interface PersistentCollection<out E> : Collection<E> {
     fun clear(): Self
 }
 
-fun <E> PersistentCollection<E>.addAll(xs: Iterable<E>): PersistentCollection<E> =
+fun <E> PersistentCollection<E>.addAll(xs: Iterable<E>): Self =
     xs.fold(this) { acc, x -> acc.add(x) }
 
 interface PersistentList<out E> : PersistentCollection<E> {
@@ -81,10 +80,6 @@ fun test() {
     val b: Data.One = a.copy()
 }
 ```
-
-#### Monadic computations
-
-TODO
 
 ### Abstract observable
 
@@ -132,6 +127,8 @@ fun main() {
 ```
 
 ### Recursive containers
+
+https://micsymposium.org/mics_2009_proceedings/mics2009_submission_56.pdf
 
 ```kotlin
 abstract class Node<out T, out Self : Node<T, Self>>(val value: T, val children: List<Self>)
@@ -259,7 +256,7 @@ fun test(q: Q, p: P) {
 }
 ```
 
-It is possible to create object of final class if it exists in the intersection type of `this`. Sealed class example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
+It is possible to create object of final class if it exists in the intersection type of `this` (on smartcast). Sealed class example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
 
 ```kotlin
 // (safe_create)
@@ -612,13 +609,26 @@ It could be done in several ways:
 
 TODO
 
+
 ## Other languages experience
+
+Languages without subtyping (and with type classes, e.g. Haskell and Rust) will not be discussed because self-types implementation is trivial for them. Methods on the call site just have signatures from the declaration site (in type class instance). No variance problems matter.
+```haskell
+class Incrementable a where
+  increment :: a -> a
+
+instance Incrementable Int where
+  increment = (+ 1)
+
+test = increment 42 :: Int
+```
 
 ### Swift
 
 * https://docs.swift.org/swift-book/ReferenceManual/Types.html#grammar_self-type
 * https://www.swiftbysundell.com/tips/using-self-to-refer-to-enclosing-types/
 * https://docs.swift.org/swift-book/LanguageGuide/Generics.html
+* https://dl.acm.org/doi/pdf/10.1145/3360590
 
 Plain return positions behave as expected. Self-type from the other object is prohibited:
 `cannot convert return expression of type 'C' to return type 'Self'`.
