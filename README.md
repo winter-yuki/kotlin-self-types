@@ -608,6 +608,11 @@ It could be done in several ways:
 
 TODO
 
+## Papers overview
+
+https://dl.acm.org/doi/10.1145/2888392
+
+TODO
 
 ## Other languages experience
 
@@ -741,12 +746,45 @@ class CC : BB {
 
 ### Scala
 
-Self-types [mean](https://docs.scala-lang.org/tour/self-types.html) something entirely different in Scala 2. But there is an implemented [proposal](https://github.com/lampepfl/dotty/issues/7374) to introduce `This` type in Scala 3.
-
-* https://dl.acm.org/doi/10.1145/2888392
 * https://docs.scala-lang.org/tour/abstract-type-members.html
+* https://docs.scala-lang.org/tutorials/FAQ/index.html#how-can-a-method-in-a-superclass-return-a-value-of-the-current-type
 
-TODO
+Compile examples with: `$ scala3 examples.scala`.
+
+Self-types [mean](https://docs.scala-lang.org/tour/self-types.html) something entirely different in Scala 2 (trait mixin requirement).
+Also there is `this.type` but it refers to the singleton type of current value.
+
+There is a [proposal](https://github.com/lampepfl/dotty/issues/7374) to introduce `ThisType` in Scala 3, however it is still raw enough.
+
+Also there is a possibility to emulate self-types with an associated type but only for one layer of hierarchy:
+```scala
+trait A:
+  type S
+  def out(): S
+  def inp(x: S): Unit
+  def inv(x: S): S
+
+class B extends A:
+  override type S <: B
+  override def out(): S = this.asInstanceOf[S]
+  override def inp(x: S): Unit = x.out()
+  override def inv(x: S): S = x
+
+class C extends B:
+  override type S = C
+  def f(): Unit = println("C.f")
+  override def inp(x: C): Unit = x.f()
+
+def test(): Unit = {
+  val b = B()
+  b.inp(b.out())
+
+  // Found: B#S Required: ?1.S
+  // B().inp(B().out())
+
+  C().out().f()
+}
+```
 
 ### Python
 

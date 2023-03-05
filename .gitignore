@@ -1,5 +1,6 @@
 *.local
 examples
+*.tasty
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,macos,gradle,kotlin,haskell,windows,intellij,swift,scala,sbt,rust,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,macos,gradle,kotlin,haskell,windows,intellij,swift,scala,sbt,rust,python
