@@ -2,12 +2,13 @@
 
 Links:
 1. [YouTrack feature request](https://youtrack.jetbrains.com/issue/KT-6494)
-2. [Discussion](https://discuss.kotlinlang.org/t/self-types/371) - java interoperability
-3. [Discussion](https://discuss.kotlinlang.org/t/this-type/1421) - observer example
-4. [Emulating self types in Kotlin](https://medium.com/@jerzy.chalupski/emulating-self-types-in-kotlin-d64fe8ea2e62)
-5. [Self Types with Java’s Generics](https://www.sitepoint.com/self-types-with-javas-generics/) - good about self-types generic emulations drawbacks
-6. [Self type in java plugin](https://github.com/manifold-systems/manifold)
-7. [`Self` name resolve considerations (ru)](https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2)
+2. [Paper on topic of `ThisType` implementation in Java](https://dl.acm.org/doi/10.1145/2888392)
+3. [Discussion](https://discuss.kotlinlang.org/t/self-types/371) - java interoperability
+4. [Discussion](https://discuss.kotlinlang.org/t/this-type/1421) - observer example
+5. [Emulating self types in Kotlin](https://medium.com/@jerzy.chalupski/emulating-self-types-in-kotlin-d64fe8ea2e62)
+6. [Self Types with Java’s Generics](https://www.sitepoint.com/self-types-with-javas-generics/) - good about self-types generic emulations drawbacks
+7. [Self types via java plugin](https://github.com/manifold-systems/manifold)
+8. [`Self` name resolve considerations (ru)](https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2)
 
 A **self-type** in method signature refers to the type on which a method is called (more formally called the *receiver*).
 
@@ -616,7 +617,7 @@ TODO
 
 ## Other languages experience
 
-Languages without subtyping (and with type classes, e.g. Haskell and Rust) will not be discussed because self-types implementation is trivial for them. Methods on the call site just have signatures from the declaration site (in type class instance). No variance problems matter.
+Languages without inheritance (and with type classes, e.g. Haskell and Rust) will not be discussed because self-types implementation is trivial for them. Methods on the call site just have signatures from the declaration site (in type class instance). No variance problems matter.
 ```haskell
 class Incrementable a where
   increment :: a -> a

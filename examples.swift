@@ -73,8 +73,10 @@ protocol AA {
 class BB : AA {
     typealias S = BB
     func f() -> BB { return self }
-    func g(x: BB) {}
+    func g(x: BB) { x.specific() }
     func h() -> Array<BB> { return [self] }
+
+    func specific() {}
 }
 
 class CC : BB {
@@ -84,3 +86,20 @@ class CC : BB {
     // error: method does not override any method from its superclass
     // override func h() -> Array<CC> { return [self, self] }
 }
+
+class DD : AA {
+    typealias S = DD
+    func f() -> DD { return self }
+    func g(x: DD) {}
+    func h() -> Array<DD> { return [self] }
+}
+
+// cannot convert value of type '(some AA).S' (associated type of protocol 'AA') to expected argument type '(some AA).S' (associated type of protocol 'AA')
+func test2(_ x: some AA, _ y: some AA) {
+    x.g(x: x.f())
+    // x.g(x: y.f())
+}
+
+// func caller() {
+//     test(BB(), DD())
+// }
