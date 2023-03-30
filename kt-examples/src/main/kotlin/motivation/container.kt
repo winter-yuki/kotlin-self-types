@@ -1,4 +1,4 @@
-package org.example
+package motivation
 
 abstract class Node<out T, out Self : Node<T, Self>>(val value: T, val children: List<Self>)
 

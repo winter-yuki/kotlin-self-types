@@ -1,4 +1,4 @@
-package org.example
+package motivation
 
 interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> : Collection<E> {
     fun add(value: @UnsafeVariance E): Self

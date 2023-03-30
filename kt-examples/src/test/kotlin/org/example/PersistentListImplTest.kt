@@ -1,5 +1,7 @@
 package org.example
 
+import motivation.PersistentListImpl
+import motivation.addAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertIterableEquals
 import org.junit.jupiter.api.Test

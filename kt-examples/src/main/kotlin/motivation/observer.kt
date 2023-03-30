@@ -1,11 +1,11 @@
 @file:Suppress("SameParameterValue")
 
-package org.example
+package motivation
 
 import kotlin.properties.ObservableProperty
 import kotlin.reflect.KProperty
 
-abstract class AbstractObservable<Self : AbstractObservable<Self>> {
+abstract class AbstractObservable<out Self : AbstractObservable<Self>> {
     private val observers = mutableListOf<(Self) -> Unit>()
 
     fun observe(observer: (Self) -> Unit) {
@@ -31,15 +31,15 @@ enum class Color {
     Purple, Blue
 }
 
-class Element : AbstractObservable<Element>() {
+class Entity : AbstractObservable<Entity>() {
     var color: Color by observable(Color.Purple)
 }
 
 fun main() {
-    val element = Element().apply {
+    val entity = Entity().apply {
         observe { // Convenient to have `it: Element` here
             println("New color = ${it.color}")
         }
     }
-    element.color = Color.Blue // Observer prints new color here
+    entity.color = Color.Blue // Observer prints new color here
 }

@@ -19,6 +19,12 @@ func testOut(c: COut) -> COut {
 }
 
 
+// final class NewSelf {
+//     // error: cannot convert return expression of type 'NewSelf' to return type 'Self'
+//     func f() -> Self { return NewSelf() }
+// }
+
+
 protocol ConstraintOnly {
     func produce() -> Self
     func consume(_ x: Self)
