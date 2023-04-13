@@ -602,6 +602,18 @@ Subtyping rules are (self-type nullability handling is obvious):
 
 Rule (4) guarantees that only values considered safe may have self-type.
 
+### Safe-positions
+
+Self-type [positions](https://kotlinlang.org/spec/declarations.html#type-parameter-variance):
+* If `C` is a dispatch receiver then `Self(C)` can be used only in covariant positions.
+* If `C` is a extension receiver then `Self(C)` can be used in all positions.
+
+Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturing) :
+* If `C` is a dispatch receiver then `Self(C)` behaves as a covariant type argument:
+  * For a covariant type parameter `out F` captured type `K <: Self(C)`;
+  * For invariant or contravariant type parameter `K` is ill-formed type.
+* If `C` is a extension receiver then `Self(C)` behaves as invariant type argument.
+
 TODO
 
 <!-- Having subtyping rules we can deduce following:
@@ -615,18 +627,7 @@ TODO
 
 TODO CST(Self(A), Self(B)) ~ ???, используя определение CST и моего `<:` понять что за `???`. Разные варианты подтипизации `A` и `B` (подтип и нет). -->
 
-<!-- ### Safe-positions
 
-Self-type [positions](https://kotlinlang.org/spec/declarations.html#type-parameter-variance):
-* If `C` is a dispatch receiver then `Self(C)` can be used only in covariant positions.
-* If `C` is a extension receiver then `Self(C)` can be used in all positions.
-
-Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturing) :
-* If `C` is a dispatch receiver then `Self(C)` behaves as a covariant type argument:
-  * For a covariant type parameter `out F` captured type `K <: Self(C)`;
-  * For invariant or contravariant type parameter `K` is ill-formed type.
-* If `C` is a extension receiver then `Self(C)` behaves as invariant type argument.
- -->
 
 <!-- TODO
 
