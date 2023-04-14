@@ -94,6 +94,8 @@ fun test() {
 }
 ```
 
+`Self` can reduce boilerplate on duplicating receiver type in the return position of function declaration. It seems more convenient then not to write return type when function actually returns something ([copy fun](https://github.com/Kotlin/KEEP/blob/master/notes/value-classes.md#abstracting-updates-into-functions)).
+
 ### Abstract factory
 
 ```kotlin
@@ -563,7 +565,7 @@ fun A.f(x: Self, producer: Out<Self>, consumer: In<Self>): Self = null!!
 fun <T : A> T.f(x: T, producer: Out<T>, consumer: In<T>): T = null!!
 ```
 
-Origin can also be generic type or an instantiated type ctor:
+Origin can also be a generic type or an instantiated type ctor:
 ```kotlin
 fun <T> T.f(x: T, y: Self): Pair<Self, Self> = x /* error: T !<: Self(T) */ to this
 fun <T> List<T>.shuffle(): Self = null!!
@@ -576,23 +578,25 @@ fun A?.f(x: Self): Self? = this?.doSomething(x)
 fun <T : A> T?.f(x: T): T? = this?.doSomething(x)
 ```
 
+### Interaction with other type kinds
+
+TODO intersection & flexible for <: & CST.
+
 
 ## Self-types specification
 
 The main danger with self-types is that its landing to a receiver type could be able to make type system unsound (like TypeScript's described below). To achieve safety three things should be properly defined: *safe-values*, *safe-positions* and *safe-calls*. First two represent safety induction base and the last one - induction step.
 
-Let `this@decl` relate to the declaration receiver and has type `D` w.r.t. flow typing.
-
-Self-type's origin is a non-nullable declaration receiver.
+Self-type's origin is a non-nullable nearest declaration receiver type (excluding context receivers). Let `this@decl` relate to the origin of type `D` w.r.t. flow typing.
 
 ### Safe-values
 
-It is needed to emphasize values that should be typed as `Self(C)`. They are:
+It is needed to emphasize values that can be typed as `Self(C)`. They are:
 1. `this@decl`;
 2. `C` constructor call in case of rules being conformed (described in design section):
   2.1 `C` is final;
   2.2 `C ~ D` or `C in D` if `D` is an intersection type;
-  2.3 `C` is declared in the same module with call-site.
+  2.3 `C` is declared in the same module with a call-site.
 
 Subtyping rules are (self-type nullability handling is obvious):
 1. `B <: A <=> Self(B) <: Self(A)` to support override for methods with self-type in the return position;
@@ -602,7 +606,15 @@ Subtyping rules are (self-type nullability handling is obvious):
 
 Rule (4) guarantees that only values considered safe may have self-type.
 
+Having `B <: A` direct supertypes of `Self(B)` are: `B`, `Self(A)`, `Self(B)?`.
+
+Common supertype:
+* `CST(Self(B1), Self(B2)) ~ Self(CST(B1, B2))` to support [this](https://youtrack.jetbrains.com/issue/KT-6494) use case.
+* `CST(Self(B), A) ~ CST(B, A)`
+
 ### Safe-positions
+
+Self-types behave like corresponding covariant recursive generic parameter with additional implicit casts (safe-values). So self-types can be used in all the same positions by definition.
 
 Self-type [positions](https://kotlinlang.org/spec/declarations.html#type-parameter-variance):
 * If `C` is a dispatch receiver then `Self(C)` can be used only in covariant positions.
@@ -614,26 +626,13 @@ Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturin
   * For invariant or contravariant type parameter `K` is ill-formed type.
 * If `C` is a extension receiver then `Self(C)` behaves as invariant type argument.
 
-TODO
-
-<!-- Having subtyping rules we can deduce following:
-* `superTypeOf(Self(A)) ~ A`;
-* `LUB(Self(A), Self(A)) ~ Self(A)`
-* `B <: A => LUB(Self(B), Self)
-
-(Common) Super type (C)ST:
-* `ST(Self(A)) ~ A`
-* `CST(Self(A), Self(A)) ~ Self(A)`
-
-TODO CST(Self(A), Self(B)) ~ ???, используя определение CST и моего `<:` понять что за `???`. Разные варианты подтипизации `A` и `B` (подтип и нет). -->
-
-
-
-<!-- TODO
-
 ### Safe-calls
 
-TODO
+Now we should ensure that everything is ok on the call-site of methods with `Self` in their signature. We do that by rule that self-type always lands to the type of the receiver. So there are two cases to consider.
+
+If type of the receiver is not a self-type then self-types land to the receiver type and there is no more self-type on the call-site. Value will be validated on the declaration-site by safe-values rule.
+
+Self-type lands to other self-type if and only if the type of the receiver is a self-type. By induction hypothesis we know that receiver value is safe, `Self` position is safe, so such a call can return only a safe value.
 
 ### Java interoperability
 
@@ -642,14 +641,6 @@ TODO
 ### Js interoperability
 
 TODO
-
-with self-type evaluates to the valid safe-value:
-* **Safe values** that are typed as `Self(C)` (induction base):
-  * `this` that refers to the declaration receiver;
-  * New object with type `C`: `C` is final && (`C == typeOf(this)` || `C in typeOf(this)`) where `in` is presence in type intersection (TODO same module);
-* **Safe calls** (induction step): self-type always lands to the type of the receiver. And it lands to other self-type if and only if type of the receiver is self-type. By induction hypothesis we know that receiver is safe and such a call can return only a safe value.
-
-TODO примеры с intersection и flexible для <: и CST. -->
 
 
 ## Other languages experience
@@ -914,7 +905,7 @@ const base = new Box();
 const derived = new DerivedBox();
 
 function test(x: Box): boolean {
-    return x.sameAs(base)
+  return x.sameAs(base)
 }
 
 test(derived) // prints: TS type system is broken

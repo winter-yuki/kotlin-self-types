@@ -1,0 +1,86 @@
+\documentclass[handout,aspectratio=43]{beamer}
+%\documentclass[aspectratio=43]{beamer}
+\usepackage[utf8] {inputenc}
+\usepackage[T2A] {fontenc}
+\usepackage[english,russian] {babel}
+\usepackage{indentfirst,verbatim}
+\usepackage{listings,amsmath,amsfonts,amssymb,multicol}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usepackage{proof}
+\usepackage{soul} % https://tex.stackexchange.com/questions/23711/strikethrough-text
+\usepackage{stmaryrd}
+\usepackage{mathrsfs}
+\usetikzlibrary{cd, babel}
+
+\usetheme{CambridgeUS}
+\usecolortheme{dolphin}
+
+% Make font smaller
+% https://tex.stackexchange.com/questions/56768/how-to-set-a-small-default-font-size-with-beamer
+\geometry{paperwidth=140mm,paperheight=105mm}
+
+% Mk mathbf work https://tex.stackexchange.com/questions/166434/problem-with-the-mathbf-command
+\usepackage{cmbright}
+\fontencoding{OT1}\fontfamily{cmbr}\selectfont %to load ot1cmbr.fd
+\DeclareFontShape{OT1}{cmbr}{bx}{n}{% change bx definition
+<->cmbrbx10%
+}{}
+\normalfont % back to normalfont
+
+\beamertemplatenavigationsymbolsempty
+
+\newcommand{\backupbegin}{
+   \newcounter{framenumbervorappendix}
+   \setcounter{framenumbervorappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+   \addtocounter{framenumbervorappendix}{-\value{framenumber}}
+   \addtocounter{framenumber}{\value{framenumbervorappendix}}
+}
+
+\newcommand{\sectionplan}[1]{\section{#1}%
+\frame[noframenumbering]{\tableofcontents[currentsection]}
+}
+
+\newcommand{\subsectionplan}[1]{\subsection{#1}%
+\frame[noframenumbering]{\tableofcontents[currentsubsection]}
+}
+
+\newcommand{\haskellsn}[1]{\lstinline[language=Haskell]{#1}}
+
+\newcommand{\sembr}[1]{\llbracket{#1}\rrbracket}
+
+\newcommand{\funcExpr}[1]{\begingroup\color{blue}#1\endgroup}
+
+\newcommand{\predicate}[1]{\begingroup\color{red}#1\endgroup}
+
+% https://tex.stackexchange.com/questions/116595/highlighting-haskell-listings-in-large-tex-document
+\lstset{
+  language=Haskell,
+  basicstyle=\footnotesize,
+  escapeinside={``}{``}
+}
+
+% Color code
+% https://tex.stackexchange.com/questions/99475/how-to-invoke-latex-with-the-shell-escape-flag-in-texstudio-former-texmakerx
+\usepackage{minted}
+%\usemintedstyle{emacs}
+
+\author[Андрей Стоян]{Стоян Андрей Сергеевич\\ {\small руководитель:} Новожилов Дмитрий TODO}
+\institute[ИТМО/SE]{Национальный исследовательский университет ИТМО\\Разработка программного обеспечения/Software engineering}
+
+\title[Self-типы в языке Kotlin]{Дизайн и разработка Self-типов для языка Kotlin}
+\date{2023г.}
+
+\begin{document}
+
+\maketitle
+
+\section{Введение}
+
+\section{Работа над задачами}
+
+\section{Результаты}
+
+\end{document}
