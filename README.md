@@ -96,7 +96,7 @@ fun test() {
 
 `Self` can reduce boilerplate on duplicating receiver type in the return position of function declaration. It seems more convenient then not to write return type when function actually returns something ([copy fun](https://github.com/Kotlin/KEEP/blob/master/notes/value-classes.md#abstracting-updates-into-functions)).
 
-### Abstract factory
+### Abstract factory pattern
 
 ```kotlin
 abstract class Element<out Factory>(val factory: Factory)
@@ -114,12 +114,12 @@ class ConcreteFactory : SpecificFactory<ConcreteFactory>() {
     override fun doSpecific() = println("Soo concrete!")
 }
 
-fun <Factory : SpecificFactory<Factory>> test(entity: Element<Factory>) {
-    entity.factory.doSpecific()
+fun <Factory : SpecificFactory<Factory>> test(element: Element<Factory>) {
+    element.factory.doSpecific()
 }
 ```
 
-### Abstract observable
+### Observer pattern
 
 ```kotlin
 abstract class AbstractObservable<out Self : AbstractObservable<Self>> {
@@ -154,7 +154,7 @@ class Entity : AbstractObservable<Entity>() {
 
 fun main() {
     val entity = Entity().apply {
-        observe { // Convenient to have `it: Element` here
+        observe { // Convenient to have `it: Entity` here
             println("New color = ${it.color}")
         }
     }

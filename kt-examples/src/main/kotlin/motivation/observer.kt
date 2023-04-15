@@ -37,7 +37,7 @@ class Entity : AbstractObservable<Entity>() {
 
 fun main() {
     val entity = Entity().apply {
-        observe { // Convenient to have `it: Element` here
+        observe { // Convenient to have `it: Entity` here
             println("New color = ${it.color}")
         }
     }

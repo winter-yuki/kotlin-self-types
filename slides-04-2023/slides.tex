@@ -1,5 +1,12 @@
-\documentclass[handout,aspectratio=43]{beamer}
+% https://en.wikibooks.org/wiki/LaTeX/Colors
+%\documentclass[handout,aspectratio=43]{beamer}
 %\documentclass[aspectratio=43]{beamer}
+\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
+%\documentclass[aspectratio=169, usenames,dvipsnames]{beamer}
+% https://tex.stackexchange.com/questions/231439/beamer-how-to-make-font-larger-for-page-numbers
+\setbeamerfont{headline}{size=\tiny}
+\setbeamerfont{footline}{size=\tiny}
+
 \usepackage[utf8] {inputenc}
 \usepackage[T2A] {fontenc}
 \usepackage[english,russian] {babel}
@@ -13,12 +20,49 @@
 \usepackage{mathrsfs}
 \usetikzlibrary{cd, babel}
 
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+\usepackage{xcolor}
+
 \usetheme{CambridgeUS}
 \usecolortheme{dolphin}
 
+% https://9to5science.com/change-bullet-style-formatting-in-beamer
+% https://tex.stackexchange.com/questions/185742/i-need-to-change-color-of-beamer-itemize-and-subitem-separately
+%\setbeamertemplate{itemize items}[default]
+%\setbeamertemplate{enumerate items}[default]
+\setbeamertemplate{itemize item}{\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subsubitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{enumerate item}{\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\insertenumlabel.\insertsubenumlabel}
+\setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
+
+% https://tex.stackexchange.com/questions/642927/format-table-of-contents-in-beamer
+\makeatletter
+\setbeamertemplate{section in toc}{%
+  \leavevmode%
+  % prevents the period to be printed with the first/last section option
+  \ifnum\beamer@tempcount>\beamer@toclastsection
+  \else
+  \ifnum\beamer@tempcount>0
+    {\color{blue}\inserttocsectionnumber.}
+  \fi\fi%
+  \inserttocsection\par%
+}
+\setbeamertemplate{subsection in toc}{%
+  \leavevmode%
+  % prevents the period to be printed with the first/last section option
+  \ifnum\beamer@tempcount>0
+    {\hspace{1em}\color{BlueViolet}\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+  \fi%
+  \inserttocsubsection\par%
+}
+\makeatother
+
 % Make font smaller
 % https://tex.stackexchange.com/questions/56768/how-to-set-a-small-default-font-size-with-beamer
-\geometry{paperwidth=140mm,paperheight=105mm}
+%\geometry{paperwidth=140mm,paperheight=105mm}
+\geometry{paperwidth=168mm,paperheight=105mm}
 
 % Mk mathbf work https://tex.stackexchange.com/questions/166434/problem-with-the-mathbf-command
 \usepackage{cmbright}
@@ -67,20 +111,430 @@
 \usepackage{minted}
 %\usemintedstyle{emacs}
 
+% https://tex.stackexchange.com/questions/70448/dont-count-backup-slides
+\usepackage{appendixnumberbeamer}
+
 \author[Андрей Стоян]{Стоян Андрей Сергеевич\\ {\small руководитель:} Новожилов Дмитрий TODO}
 \institute[ИТМО/SE]{Национальный исследовательский университет ИТМО\\Разработка программного обеспечения/Software engineering}
 
-\title[Self-типы в языке Kotlin]{Дизайн и разработка Self-типов для языка Kotlin}
-\date{2023г.}
+\title[Дизайн Self-типов для языка Kotlin]{Дизайн и разработка Self-типов для языка Kotlin}
+\date{2023 год}
 
 \begin{document}
 
 \maketitle
 
+\begin{frame}{Содержание}
+    \tableofcontents
+\end{frame}
+
 \section{Введение}
 
-\section{Работа над задачами}
+\subsection{Основные понятия}
+
+\begin{frame}[fragile]{Ресиверы в Kotlin}
+    \begin{block}{Ресивер функции}
+        Объект, на котором функция может быть вызвана, и который доступен как \texttt{this} в её теле. Ресиверов может быть несколько. Является дополнительным параметром функции.
+    \end{block}
+
+    \pause
+    \begin{columns}[onlytextwidth]
+        \begin{column}{0.46\textwidth}
+            \begin{block}{Dispatch ресивер}
+                Ресивер, по которому происходит виртуальная диспетчеризация вызова:
+                \begin{minted}[escapeinside=??]{kotlin}
+interface Base { fun greet() } ?\pause?
+class Derived : Base {
+    override fun greet() {
+        println("Hello")
+    }
+} ?\pause?
+val b: Base = Derived();
+b.greet() // Печатает "Hello"
+                \end{minted}
+            \end{block}
+        \end{column}\hfill%
+        \pause
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Extension ресивер}
+                Не участвует в виртуальном вызове, нотация для передачи одного из параметров в функцию:
+                 \begin{minted}{kotlin}
+fun String.twice() = this + this
+// fun twice(String s) = s + s
+println("Y".twice()) // Печатает "YY"
+                 \end{minted}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Вариантность типовых параметров}
+    \begin{block}{Вариантность типового параметра}
+        \begin{itemize}
+            \item Определят, в каких позициях можно использовать этот типовой параметр
+            \item Задаёт отношение подтипизации между параметризованными типами
+        \end{itemize}
+    \end{block}
+
+    \pause
+    \begin{block}{Инвариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface C<T> { fun id(x: ?\framebox{T}?): ?\framebox{T}? }|}
+        \begin{itemize}
+            \item Можно использовать во входящих и исходящих позициях в декларациях методов
+            \item Не устанавливает отношения подтипизации: \texttt{C<B> !<:> C<A>}
+        \end{itemize}
+    \end{block}
+
+    \pause
+    \begin{block}{Ковариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface C<?\framebox{out}? T> { fun produce(): ?\framebox{T}? }|}
+        \begin{itemize}
+            \item Можно использовать только в исходящих позициях в декларациях методов
+            \item Устанавливает отношение подтипизации: \texttt{B <: A => C<B> <: C<A>}
+        \end{itemize}
+    \end{block}
+
+    \pause
+    \begin{block}{Контравариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface C<?\framebox{in}? T> { fun accept(x: ?\framebox{T}?) }|}
+        \begin{itemize}
+            \item Можно использовать только во входящих позициях в декларациях методов
+            \item Устанавливает отношение подтипизации: \texttt{B <: A => C<B> :> C<A>}
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Self-типы}
+        \begin{columns}[onlytextwidth]
+            \begin{column}{0.46\textwidth}
+                \begin{block}{Self-тип}
+                    Тип, ссылающийся на тип ресивера, на котором функция вызывается. Это может быть подтип типа ресивера, указанного в декларации.
+                    \begin{minted}[escapeinside=??]{kotlin}
+interface Base {
+    fun base(): ?\framebox{Self}? = ?\framebox{this}?
+} ?\pause?
+class Defived : Base {
+    fun derived() { /* ... */ }
+} ?\pause?
+fun Base.extension(): ?\framebox{Self}? = this ?\pause?
+fun test(d: Derived) =
+    d.base()      /* : ?\framebox{Derived}? */
+     .extension() /* : ?\framebox{Derived}? */
+     .derived()
+                    \end{minted}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}{0.48\textwidth}
+                \pause
+                \begin{block}{Origin Self-типа}
+                    Назовём origin'ом Self-типа тип ресивера, указанный в декларации.
+
+                    \vspace{0em}
+                    Для обоих вхождений \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| это \mintinline{kotlin}|Base| (обозначение \mintinline{kotlin}|Self(Base)|).
+                \end{block}
+
+                \pause
+                \begin{block}{Приземление Self-типа}
+                    Подстановка вместо вхождений Self-типа реального типа ресивера в месте вызова.
+
+                    \vspace{0.0em}
+                    Оба Self-типа приземляются в \mintinline[escapeinside=??]{kotlin}|?\framebox{Derived}?|.
+                \end{block}
+
+                \pause
+                \begin{block}{Система типов корректна/безопасна/sound}
+                    Всякая программа без приведений типов, в которой во время исполнения может возникнуть ошибка проверки типов, отвергается статической проверкой типов.
+                \end{block}
+            \end{column}
+        \end{columns}
+\end{frame}
+
+\subsection{Мотивация: сценарии использования}
+
+\begin{frame}[fragile]{Персистентные коллекции и иммутабельные структуры}
+    Стиль программирования с использованием персистентных коллекций и иммутабельных структур данных проще для восприятия и менее подвержен ошибкам, чем мутирующий.
+
+    \begin{minted}[escapeinside=??]{kotlin}
+interface PCollection<out T> {
+    fun add(x: @UV?\footnote{@UnsafeVariance}? T): ?\framebox{Self}? // исходящая позиция
+} ?\pause?
+interface PList<out T> : PCollection<T> {
+    fun listSpecific() { /* ... */ }
+} ?\pause?
+fun <T> PList<T>.addTwiceSpecific(x: T) = this.add(x).add(x).listSpecific()
+    \end{minted}
+
+    \pause
+    Альтернатива: переопределять каждый метод в каждом наследнике с более специфичным возвращаемым типом (\mintinline[escapeinside=??]{kotlin}|fun add(x: @UV): ?\framebox{PList<T>}?|).
+    \begin{itemize}
+        \item Существенное количество boilerplate code
+        \item Нет контроля, что при добавлении метода в базовый класс также добавлен переопределяющий во всех наследниках
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон абстрактная фабрика}
+    Пусть требуется по элементу типизируемым образом получить породившую его фабрику.
+
+    \begin{minted}[escapeinside=??]{kotlin}
+abstract class Element<out F : Factory>(val factory: F) ?\pause?
+
+interface Factory {
+    fun create(): Element<?\framebox{Self}?> // ковариантная исходящая позиция
+} ?\pause?
+abstract class SpecificFactory : Factory {
+    abstract fun doSpecific()
+} ?\pause?
+class ConcreteFactory : SpecificFactory() {
+    override fun create(): Element<?\framebox{Self}?> = /* ... */
+    override fun doSpecific() = /* ... */
+} ?\pause?
+
+fun <F : SpecificFactory> test(entity: Element<F>) {
+    entity.factory.doSpecific()
+}
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон наблюдатель}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            Абстрагируем логику регистрации и нотификации наблюдателей:
+            \begin{minted}[escapeinside=??]{kotlin}
+abstract class AbstractObservable {
+    // контравариантная входная позиция
+    fun observe(
+        observer: (?\framebox{Self}?) -> Unit
+    ) {
+        observers += observer
+    }
+
+    private fun notifyObservers() {
+        observers.forEach { observer ->
+            observer(?\framebox{this}?)
+        }
+    }
+}
+            \end{minted}
+        \end{column}
+        \pause
+        \begin{column}{0.52\textwidth}
+            \begin{minted}[escapeinside=??]{kotlin}
+class Entity : AbstractObservable {
+    val color: Color
+        set(new: Color) {
+            field = new
+            notifyObservers()
+        }
+} ?\pause?
+
+fun test() {
+    val entity = Entity()
+    entity.observe { it: ?\framebox{Entity}? ->
+        // Сложнее ошибиться со ссылкой
+        println("New color: ${it.color}")
+    }
+    entity.color = Color.Blue
+}
+            \end{minted}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Рекурсивные структуры данных}
+    Также Self-типы помогают строить рекурсивные структуры данных из вершин одного типа:
+    \begin{minted}[escapeinside=??]{kotlin}
+abstract class Node<out T>(val value: T, val children: List<?\framebox{Self}?>)
+?\pause?
+class BetterNode<out T>(value: T, children: List<?\framebox{Self}?> = emptyList()) :
+    Node<T>(value, children) {
+    fun doTheBest() = println(value)
+}
+?\pause?
+fun test() {
+    val betterTree = BetterNode(value = 2, children =
+        listOf<?\framebox{BetterNode<Int>}?>(
+            BetterNode(1, listOf(BetterNode(0))),
+            BetterNode(4, listOf(BetterNode(3), BetterNode(5)))))
+    betterTree.children
+        .flatMap { it.children }
+        .forEach { it.doTheBest() } // Печатает "0 3 5"
+}
+    \end{minted}
+\end{frame}
+
+\subsection{Обзор существующих решений}
+
+\begin{frame}[fragile]{Рекурсивные дженерики}
+    Self-типы могут быть эмулированы с помощью ковариантного типового параметра с рекурсивным ограничением:
+    \begin{minted}[escapeinside=??]{kotlin}
+interface PCollection<out E, ?\framebox{out Self : PCollection<E, Self>}?> {
+    fun add(value: @UV E): ?\framebox{Self}?
+} ?\pause?
+fun <E, C> C.addAll(xs: Iterable<E>): C where ?\framebox{C : PCollection<E, C>}? =
+    xs.fold(this) { acc, x -> acc.add(x) }
+?\pause?
+interface PList<out E, ?\framebox{out Self : PList<E, Self>}?> : PCollection<E, ?\framebox{Self}?> {
+    fun listSpecific() { /* ... */ }
+}
+?\pause?
+fun <T, L> L.addTwiceSpecific(x: T) where ?\framebox{L : PList<T, L>}? =
+    this.add(x).add(x).listSpecific()
+    \end{minted}
+    \begin{itemize}
+        \item Возникающий паттерн рекурсивного ограничения распространяется по всему коду
+        \item Если origin это dispatch ресивер, требуется явное приведение типов: \mintinline[escapeinside=??]{kotlin}|this as ?\framebox{Self}?|
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Self-типы в других языках (1)}
+    \begin{columns}[onlytextwidth]
+        \begin{column}{0.46\textwidth}
+            \begin{block}{Haskell, Rust, ...}
+                Self-типы в языках без наследования, тривиально ссылаются на тип, для которого реализуется ограничение:
+                \begin{minted}[escapeinside=??]{haskell}
+class Inc ?\framebox{self}? where
+  inc :: ?\framebox{self}? -> ?\framebox{self}?
+
+instance Inc ?\framebox{Int}? where
+  inc x = x + 1
+
+incinc :: forall a. Inc a => a -> a
+incinc = inc . (inc :: a -> a)
+                \end{minted}
+            \end{block}
+        \end{column}\hfill%
+        \pause
+        \begin{column}{0.50\textwidth}
+            \begin{block}{Python}
+                \href{https://peps.python.org/pep-0673/}{\color{blue}Поддерживается}
+                 только исходящая позиция.
+            \end{block}
+            \begin{block}{TypeScript}
+                Self-тип (\href{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}{\color{blue}this-тип}) можно писать в произвольной позиции, при этом безопасность системой типов не гарантируется.
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Self-типы в других языках (2)}
+    \begin{columns}[onlytextwidth]
+        \begin{column}{0.46\textwidth}
+            \begin{block}{Scala}
+                \begin{itemize}
+                    \item Термин ``Self-тип'' в Scala \href{https://docs.scala-lang.org/tour/self-types.html}{\color{blue} обозначает} совершенно другое
+                    \item Нужное поведение можно эмулировать с помощью \href{https://docs.scala-lang.org/tour/abstract-type-members.html}{\color{blue}abstract type members} с приведениями типов
+                    \item Существует \href{https://github.com/lampepfl/dotty/issues/7374}{\color{blue}предложение} по добавлению This-типа в Scala3, пока без подробностей и \href{http://dotty.epfl.ch/}{\color{blue}документации}
+                \end{itemize}
+            \end{block}
+        \end{column}\hfill%
+        \pause
+        \begin{column}{0.51\textwidth}
+            \begin{block}{Swift}
+                \begin{itemize}
+                    \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции
+                    \item Как только в протоколе\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} появляется \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции:
+                    \begin{itemize}
+                        \item Протокол можно использовать только как ограничение для типового параметра
+                        \item Реализующий класс обязан заменить вхождения Self-типа на себя
+                        \item Ситуация становится аналогична языкам без наследования
+                    \end{itemize}
+                    \item Self-типы в расширениях ссылаются на расширяемый тип
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\section{Цели и задачи}
+
+\begin{frame}[fragile]{Цели и задачи}
+    \begin{block}{Цель}
+        Реализовать поддержку Self-типов для языка Kotlin.
+    \end{block}
+    \begin{block}{Задачи}
+        \begin{enumerate}
+            \item Составить дизайн-документ по интеграции Self-типов в Kotlin
+            \item Убедиться, что система типов после добавление Self-типов останется безопасной
+            \item Реализовать поддержку Self-типов в компиляторе kotlinc (K2)
+            \item Протестировать полученную реализацию
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+\section{Дизайн Self-типов}
+
+\section{Корректность Self-типов}
+
+\section{Реализация Self-типов в компиляторе kotlinc (K2)}
+
+\section{Тестирование релизации}
 
 \section{Результаты}
+
+\appendix
+
+\section{Дополнительные слайды}
+
+\begin{frame}{Материалы}
+    \begin{enumerate}
+        \item \href{https://youtrack.jetbrains.com/issue/KT-6494}{\color{blue} YouTrack feature request}
+        \item \href{https://dl.acm.org/doi/10.1145/2888392}{\color{blue} Paper on topic of ThisType implementation in Java}
+        \item \href{https://discuss.kotlinlang.org/t/self-types/371}{\color{blue} Discussion: java interoperability}
+        \item \href{https://discuss.kotlinlang.org/t/this-type/1421}{\color{blue} Discussion: observer example}
+        \item \href{https://medium.com/@jerzy.chalupski/emulating-self-types-in-kotlin-d64fe8ea2e62}{\color{blue} Emulating self types in Kotlin}
+        \item \href{https://www.sitepoint.com/self-types-with-javas-generics/}{\color{blue} Self Types with Java’s Generics: self-types generic emulations drawbacks}
+        \item \href{https://github.com/manifold-systems/manifold}{\color{blue} Self types via java plugin}
+        \item \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue} Swift language Self-type doc}
+        \item \href{https://peps.python.org/pep-0673/}{\color{blue} Python language Self-types PEP}
+        \href{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}{\color{blue}TypeScript this-тип}
+        \item \href{https://maximgran.notion.site/maximgran/Self-types-58e89d6dda374ba9abb4483b192a49c2}{\color{blue} Self name resolve considerations (ru)}
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Множественные ресиверы}
+   У функции может быть до одного dispatch ресивера и сколько угодно extension ресиверов:
+   \begin{minted}{kotlin}
+class C : B() {
+    fun String.greetSpecially() {
+        greet(); println(this)
+    }
+}
+// Печатает "Hello X"
+with (B()) { " X".greetSpecially() }
+   \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Python}
+                \begin{minted}{python}
+Self = TypeVar("Self", bound="Shape")
+class Shape:
+    def set_scale(
+        self: Self, scale: float
+    ) -> Self:
+        self.scale = scale
+        return self
+                \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{TypeScript}
+                \begin{minted}{typescript}
+class Box {
+  sameAs(other: this): boolean { /* ... */ }
+}
+class DerivedBox extends Box {
+  otherContent: string = "?";
+  sameAs(other: this): boolean {
+    if (other.otherContent === undefined) {
+      console.log("broken")
+    }
+    ...
+  }
+}
+const base = new Box();
+const derived = new DerivedBox();
+function test(x: Box): boolean {
+  return x.sameAs(base)
+}
+test(derived) // Печатает "broken"
+                \end{minted}
+\end{frame}
 
 \end{document}

@@ -15,6 +15,6 @@ class ConcreteFactory : SpecificFactory<ConcreteFactory>() {
     override fun doSpecific() = println("Soo concrete!")
 }
 
-fun <Factory : SpecificFactory<Factory>> test(entity: Element<Factory>) {
-    entity.factory.doSpecific()
+fun <Factory : SpecificFactory<Factory>> test(element: Element<Factory>) {
+    element.factory.doSpecific()
 }
