@@ -298,6 +298,9 @@ fun <F : SpecificFactory> test(entity: Element<F>) {
             Абстрагируем логику регистрации и нотификации наблюдателей:
             \begin{minted}[escapeinside=??]{kotlin}
 abstract class AbstractObservable {
+    private val observers =
+        mutableListOf<(Self) -> Unit>()
+
     // контравариантная входная позиция
     fun observe(
         observer: (?\framebox{Self}?) -> Unit
@@ -314,10 +317,11 @@ abstract class AbstractObservable {
             \end{minted}
         \end{column}
         \pause
-        \begin{column}{0.52\textwidth}
+        \begin{column}{0.50\textwidth}
+            \vspace{-0.5em}
             \begin{minted}[escapeinside=??]{kotlin}
 class Entity : AbstractObservable {
-    val color: Color
+    var color: Color = Color.Purple
         set(new: Color) {
             field = new
             notifyObservers()
@@ -330,6 +334,7 @@ fun test() {
         // Сложнее ошибиться со ссылкой
         println("New color: ${it.color}")
     }
+    // Печатает "New color: Color.Blue"
     entity.color = Color.Blue
 }
             \end{minted}
@@ -385,7 +390,7 @@ fun <T, L> L.addTwiceSpecific(x: T) where ?\framebox{L : PList<T, L>}? =
 
 \begin{frame}[fragile]{Self-типы в других языках (1)}
     \begin{columns}[onlytextwidth]
-        \begin{column}{0.46\textwidth}
+        \begin{column}{0.48\textwidth}
             \begin{block}{Haskell, Rust, ...}
                 Self-типы в языках без наследования, тривиально ссылаются на тип, для которого реализуется ограничение:
                 \begin{minted}[escapeinside=??]{haskell}
@@ -396,18 +401,27 @@ instance Inc ?\framebox{Int}? where
   inc x = x + 1
 
 incinc :: forall a. Inc a => a -> a
-incinc = inc . (inc :: a -> a)
+incinc = inc . (inc :: ?\framebox{a}? -> ?\framebox{a}?)
                 \end{minted}
             \end{block}
-        \end{column}\hfill%
-        \pause
-        \begin{column}{0.50\textwidth}
+            \pause
             \begin{block}{Python}
                 \href{https://peps.python.org/pep-0673/}{\color{blue}Поддерживается}
                  только исходящая позиция.
             \end{block}
+        \end{column}\hfill%
+        \pause
+        \begin{column}{0.49\textwidth}
             \begin{block}{TypeScript}
                 Self-тип (\href{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}{\color{blue}this-тип}) можно писать в произвольной позиции, при этом безопасность системой типов не гарантируется.
+            \end{block}
+            \pause
+            \begin{block}{Scala}
+                \begin{itemize}
+                    \item Термин ``Self-тип'' в Scala \href{https://docs.scala-lang.org/tour/self-types.html}{\color{blue} обозначает} совершенно другое
+                    \item Нужное поведение можно эмулировать с помощью \href{https://docs.scala-lang.org/tour/abstract-type-members.html}{\color{blue}abstract type members} в одном наследнике с приведениями типов
+                    \item Существует \href{https://github.com/lampepfl/dotty/issues/7374}{\color{blue}предложение} по добавлению This-типа в Scala3, пока без подробностей и \href{http://dotty.epfl.ch/}{\color{blue}документации}
+                \end{itemize}
             \end{block}
         \end{column}
     \end{columns}
@@ -415,26 +429,23 @@ incinc = inc . (inc :: a -> a)
 
 \begin{frame}[fragile]{Self-типы в других языках (2)}
     \begin{columns}[onlytextwidth]
-        \begin{column}{0.46\textwidth}
-            \begin{block}{Scala}
-                \begin{itemize}
-                    \item Термин ``Self-тип'' в Scala \href{https://docs.scala-lang.org/tour/self-types.html}{\color{blue} обозначает} совершенно другое
-                    \item Нужное поведение можно эмулировать с помощью \href{https://docs.scala-lang.org/tour/abstract-type-members.html}{\color{blue}abstract type members} с приведениями типов
-                    \item Существует \href{https://github.com/lampepfl/dotty/issues/7374}{\color{blue}предложение} по добавлению This-типа в Scala3, пока без подробностей и \href{http://dotty.epfl.ch/}{\color{blue}документации}
-                \end{itemize}
-            \end{block}
+        \begin{column}{0.0\textwidth}
+
         \end{column}\hfill%
         \pause
-        \begin{column}{0.51\textwidth}
+        \begin{column}{0.99\textwidth}
             \begin{block}{Swift}
                 \begin{itemize}
-                    \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции
-                    \item Как только в протоколе\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} появляется \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции:
+                    \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции \pause
+                    \item Для методов классов Self-тип доступен только для исходящей позиции \pause
+                    \item Если декларация метода протокола\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} содержит \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции: \pause
                     \begin{itemize}
-                        \item Протокол можно использовать только как ограничение для типового параметра
-                        \item Реализующий класс обязан заменить вхождения Self-типа на себя
+                        \item Запрещено вызывать такие методы виртуально на \mintinline{swift}|any Protocol|
+                        \item Можно вызывать, если протокол является ограничением типового параметра или при мономорфизации на \mintinline{swift}|some Protocol|
+                        \item Реализующий класс обязан заменить такие вхождения Self-типа на себя
                         \item Ситуация становится аналогична языкам без наследования
-                    \end{itemize}
+                    \end{itemize} \pause
+                    \item Ассоциированные типы так же позволяют эмулировать Self-типы, но на один уровень иерархии и с дополнительными приведениями типа \pause
                     \item Self-типы в расширениях ссылаются на расширяемый тип
                 \end{itemize}
             \end{block}

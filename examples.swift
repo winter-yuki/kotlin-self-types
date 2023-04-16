@@ -137,3 +137,8 @@ func testAssoc(_ x: some AAssoc, _ y: some AAssoc) {
     // cannot convert value of type '(some AAssoc).S' (associated type of protocol 'AAssoc') to expected argument type '(some AAssoc).S' (associated type of protocol 'AAssoc')
     // x.g(x: y.f())
 }
+
+// error: member 'g' cannot be used on value of type 'any AAssoc'; consider using a generic constraint instead
+// func testAssocAny(_ x: any AAssoc, _ y: any AAssoc) {
+//     x.g(x: x.f())
+// }
