@@ -1,5 +1,3 @@
-
-
 ## Implementation
 
 There are three approaches to implement self-types:

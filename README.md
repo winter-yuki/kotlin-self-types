@@ -556,6 +556,10 @@ Contravariant and invariant self-type positions are the same as if `Self` was a 
 class A(/* mb private val */ x: In<Self>)
 ```
 
+### Base class generic position
+
+TODO
+
 ### Extension function position
 
 Self-type behaves as generic with receiver constraint:
@@ -909,4 +913,13 @@ function test(x: Box): boolean {
 }
 
 test(derived) // prints: TS type system is broken
+```
+
+```kotlin
+val base: exists X. X <: Base
+val derived: exists X. X <: Derived
+// derived <: Base
+
+sameAs : forall X. X <: Base => X -> X -> Bool
+sameAs (derived @Base) : base
 ```
