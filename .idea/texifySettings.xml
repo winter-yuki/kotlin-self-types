@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Conventions">
+    <option name="scheme">
+      <TexifyConventionsScheme>
+        <option name="labelConventions">
+          <list>
+            <LabelConvention>
+              <option name="name" value="part" />
+              <option name="prefix" value="part" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="chapter" />
+              <option name="prefix" value="ch" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="section" />
+              <option name="prefix" value="sec" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="subsection" />
+              <option name="prefix" value="subsec" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="subsubsection" />
+              <option name="prefix" value="subsubsec" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="paragraph" />
+              <option name="prefix" value="par" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="subparagraph" />
+              <option name="prefix" value="subpar" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="name" value="item" />
+              <option name="prefix" value="itm" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="lstinputlisting" />
+              <option name="prefix" value="lst" />
+              <option name="type" value="COMMAND" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="figure" />
+              <option name="prefix" value="fig" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="table" />
+              <option name="prefix" value="tab" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="equation" />
+              <option name="prefix" value="eq" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="algorithm" />
+              <option name="prefix" value="alg" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="lstlisting" />
+              <option name="prefix" value="lst" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+            <LabelConvention>
+              <option name="enabled" value="true" />
+              <option name="name" value="Verbatim" />
+              <option name="prefix" value="verb" />
+              <option name="type" value="ENVIRONMENT" />
+            </LabelConvention>
+          </list>
+        </option>
+        <option name="myName" value="Project" />
+      </TexifyConventionsScheme>
+    </option>
+  </component>
+</project>

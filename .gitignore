@@ -4,6 +4,7 @@ examples
 *.tmp
 tmp.*
 **/bin/**
+*.pdf
 
 # Created by https://www.toptal.com/developers/gitignore/api/sbt,rust,linux,macos,scala,swift,gradle,kotlin,python,haskell,windows,intellij,latex
 # Edit at https://www.toptal.com/developers/gitignore?templates=sbt,rust,linux,macos,scala,swift,gradle,kotlin,python,haskell,windows,intellij,latex

@@ -152,11 +152,13 @@ class Entity : AbstractObservable<Entity>() {
     var color: Color by observable(Color.Purple)
 }
 
+fun observer(entity: Entity) {
+    println("New color = ${entity.color}")
+}
+
 fun main() {
     val entity = Entity().apply {
-        observe { // Convenient to have `it: Entity` here
-            println("New color = ${it.color}")
-        }
+        observe(::observer)
     }
     entity.color = Color.Blue // Observer prints new color here
 }
@@ -286,11 +288,11 @@ open class A {
 }
 
 class Q : A() {
-    fun qOnly() = Unit
+    fun qOnly() {}
 }
 
 class P : A() {
-    fun pOnly() = Unit
+    fun pOnly() {}
 }
 
 fun test(q: Q, p: P) {
