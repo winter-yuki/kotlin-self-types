@@ -12,7 +12,7 @@ Links:
 
 A **self-type** in method signature refers to the type on which the method is called (more formally called the *receiver*).
 
-We will use `Self(C)` type notation denoting self-type that corresponds to a declaration receiver type `C` (called *origin*). `Self(C)` has user scope of class `C`. Replacement of self-type with exact receiver type on method call-site is called *landing*.
+We will use `Self(C)` type notation denoting self-type that corresponds to a declaration receiver type `C` (called *origin*). `Self(C)` has user scope of class `C`. Replacement of self-type with an exact receiver type on method call-site is called *materialization*.
 
 ```kotlin
 abstract class A
@@ -225,7 +225,7 @@ class C {
 fun B.baz(): Self /* (B) */ = this
 ```
 
-Labeled self-type could be problematic in designing and implementing them because it is not obvious when to land `Self` to an actual receiver type:
+Labeled self-type could be problematic in designing and implementing them because it is not obvious when to materializes `Self` to an actual receiver type:
 ```kotlin
 class C {
     fun A.foo(): Self@C       /* (C) */ {
@@ -258,7 +258,7 @@ class Outer {
 
 ### Assignability issue
 
-Only `this` that refers to the function receiver should be assignable to the self-type with the corresponding origin, otherwise self-type landing makes type system unsound:
+Only `this` that refers to the function receiver should be assignable to the self-type with the corresponding origin, otherwise self-type materialization makes type system unsound:
 ```kotlin
 abstract class A {
     fun self(): Self = this // This is assignable to Self
@@ -390,7 +390,7 @@ class B(a: Int, val b: Int) : A(a) {
 
 fun test(c: Comparable, a: A, b: B) {
     c.compareTo(a)        // Compiles
-    a.compareTo(c)        // Not compiles due to self-type landing
+    a.compareTo(c)        // Not compiles due to self-type materialization
     (b as A).compareTo(a) // ERROR: dispatches to B.compareTo, no A.b field exists
 }
 ```
@@ -591,7 +591,7 @@ TODO intersection & flexible for <: & CST.
 
 ## Self-types specification
 
-The main danger with self-types is that its landing to a receiver type could be able to make type system unsound (like TypeScript's described below). To achieve safety three things should be properly defined: *safe-values*, *safe-positions* and *safe-calls*. First two represent safety induction base and the last one - induction step.
+The main danger with self-types is that its materialization to a receiver type could be able to make type system unsound (like TypeScript's described below). To achieve safety three things should be properly defined: *safe-values*, *safe-positions* and *safe-calls*. First two represent safety induction base and the last one - induction step.
 
 Self-type's origin is a non-nullable nearest declaration receiver type (excluding context receivers). Let `this@decl` relate to the origin of type `D` w.r.t. flow typing.
 
@@ -636,7 +636,7 @@ Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturin
 
 Now we should ensure that everything is ok on the call-site of methods with `Self` in their signature. We do that by rule that self-type always lands to the type of the receiver. So there are two cases to consider.
 
-If type of the receiver is not a self-type then self-types land to the receiver type and there is no more self-type on the call-site. Value will be validated on the declaration-site by safe-values rule.
+If type of the receiver is not a self-type, then self-type materializes to the receiver type and there is no more self-type on the call-site. Value will be validated on the declaration-site by safe-values rule.
 
 Self-type lands to other self-type if and only if the type of the receiver is a self-type. By induction hypothesis we know that receiver value is safe, `Self` position is safe, so such a call can return only a safe value.
 
@@ -915,13 +915,4 @@ function test(x: Box): boolean {
 }
 
 test(derived) // prints: TS type system is broken
-```
-
-```kotlin
-val base: exists X. X <: Base
-val derived: exists X. X <: Derived
-// derived <: Base
-
-sameAs : forall X. X <: Base => X -> X -> Bool
-sameAs (derived @Base) : base
 ```

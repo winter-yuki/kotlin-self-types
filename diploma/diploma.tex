@@ -1,0 +1,26 @@
+\documentclass{./cls/spbau-diploma}
+
+% \includeonly{abstract}
+% \includeonly{introduction}
+% \includeonly{chapter1}
+% \includeonly{chapter2}
+% \includeonly{chapter3}
+% \includeonly{chapter4}
+% \includeonly{summary}
+
+\begin{document}
+
+    \tableofcontents
+
+    \include{abstract}
+    \include{introduction}
+    \include{chapter1}
+    \include{chapter2}
+    \include{chapter3}
+    \include{chapter4}
+    \include{summary}
+
+    % Use relative to `./out` paths because of shitty LaTeX (BibTeX) build-system
+    \bibliographystyle{./../BibTeX-Styles/ugost2008ls}
+    \bibliography{diploma}
+\end{document}
