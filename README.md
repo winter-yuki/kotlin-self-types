@@ -12,7 +12,7 @@ Links:
 
 A **self-type** in method signature refers to the type on which the method is called (more formally called the *receiver*).
 
-We will use `Self(C)` type notation denoting self-type that corresponds to a declaration receiver type `C` (called *origin*). `Self(C)` has user scope of class `C`. Replacement of self-type with an exact receiver type on method call-site is called *materialization*.
+We will use `Self(C)` type notation denoting self-type that corresponds to a declaration receiver type `C` (called *bound*). `Self(C)` has user scope of class `C`. Replacement of self-type with an exact receiver type on method call-site is called *materialization*.
 
 ```kotlin
 abstract class A
@@ -21,7 +21,7 @@ class B : A()
 fun A.foo(): Self /* Self(A) */ = this
 
 fun test(b1: B) {
-    // `Self(A)` lands to `B`
+    // `Self(A)` materializes to `B`
     val b2: B = b1.foo()
 }
 ```
@@ -33,13 +33,13 @@ Self-types can be emulated with weird boilerplate code using recursive generics 
 
 ### Transformation chains
 
-The most common example of self-types application is an [abstract builder pattern](https://medium.com/@hazraarka072/fluent-builder-and-powering-it-up-with-recursive-generics-in-java-483005a85fcd). Nevertheless, in Kotlin builders are usually implemented via extension receivers or `apply` function (builder object should be mutable here). Although, if we want to construct a transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful.
+The most common example of self-types application is an [abstract builder pattern](https://medium.com/@hazraarka072/fluent-builder-and-powering-it-up-with-recursive-generics-in-java-483005a85fcd). Nevertheless, in Kotlin builders are usually implemented via extension receivers or `apply` function (a builder object should be mutable here). Although, if we want to construct a transformation chain of an immutable object (or to use *prototype* architecture pattern with `clone()` method in class hierarchy), self-types are still useful.
 
 #### Persistent collections
 
 Modification methods of a persistent data structure do not modify a collection itself but create a modified new one. To modify such collections in fluent style using methods of the base classes, [recursive generics](http://web.archive.org/web/20130721224442/http:/passion.forco.de/content/emulating-self-types-using-java-generics-simplify-fluent-api-implementation) should be used, alternatively derived class should declare abstract overrides ([kotlinx.immutable](https://github.com/Kotlin/kotlinx.collections.immutable/blob/d7b83a13fed459c032dab1b4665eda20a04c740f/core/commonMain/src/ImmutableList.kt#L66)) for all modification methods with more specific return types.
 
-However, recursive generics are cumbersome and they infect the code that uses them:
+However, recursive generics are cumbersome, and they infect the code that uses them:
 
 ```kotlin
 interface PersistentCollection<out E, out Self : PersistentCollection<E, Self>> : Collection<E> {
@@ -71,7 +71,7 @@ interface PersistentList<out E> : PersistentCollection<E> {
 }
 ```
 
-Also, there is no compiler control over such abstract overrides, so developer can easily add new modification methods in the base class and may forget to add abstract overrides to all the derived classes.
+Also, there is no compiler control over such abstract overrides, so a developer can easily add new modification methods in the base class and may forget to add abstract overrides to all the derived classes.
 
 #### Immutable data structures
 
@@ -94,7 +94,7 @@ fun test() {
 }
 ```
 
-`Self` can reduce boilerplate on duplicating receiver type in the return position of function declaration. It seems more convenient then not to write return type when function actually returns something ([copy fun](https://github.com/Kotlin/KEEP/blob/master/notes/value-classes.md#abstracting-updates-into-functions)).
+`Self` can reduce boilerplate on a duplicating receiver type in the return position of function declaration. It seems more convenient than not to write a return type when a function actually returns something ([copy fun](https://github.com/Kotlin/KEEP/blob/master/notes/value-classes.md#abstracting-updates-into-functions)).
 
 ### Abstract factory pattern
 
@@ -197,7 +197,7 @@ fun main() {
 
 ## Design
 
-Self-type behaves similar to the corresponding covariant recursive generic parameter that is bounded with origin. The only advantage of the explicit generic parameter is the possibility of using it with `@UnsafeVariance` in contravariant and invariant positions. But there are no safe useful applications known.
+Self-type behaves similar to the corresponding covariant recursive generic parameter that is bounded with bound. The only advantage of the explicit generic parameter is the possibility of using it with `@UnsafeVariance` in contravariant and invariant positions. But there are no safe useful applications known.
 
 ```kotlin
 fun interface In<in T> {
@@ -213,9 +213,9 @@ fun interface Inv<T> {
 }
 ```
 
-### `Self` origin and labels
+### `Self` bound and labels
 
-`Self` origin is the nearest declaration receiver (excluding context receivers):
+`Self` bound is the nearest declaration receiver (excluding context receivers):
 ```kotlin
 class C {
     fun foo(): Self /* (C) */ = this
@@ -225,7 +225,7 @@ class C {
 fun B.baz(): Self /* (B) */ = this
 ```
 
-Labeled self-type could be problematic in designing and implementing them because it is not obvious when to materializes `Self` to an actual receiver type:
+Labeled self-type could be problematic in designing and implementing them because it is not obvious when to materialize `Self` to an actual receiver type:
 ```kotlin
 class C {
     fun A.foo(): Self@C       /* (C) */ {
@@ -258,7 +258,7 @@ class Outer {
 
 ### Assignability issue
 
-Only `this` that refers to the function receiver should be assignable to the self-type with the corresponding origin, otherwise self-type materialization makes type system unsound:
+Only `this` that refers to the function receiver should be assignable to the self-type with the corresponding bound, otherwise self-type materialization makes a type system unsound:
 ```kotlin
 abstract class A {
     fun self(): Self = this // This is assignable to Self
@@ -278,7 +278,7 @@ fun test(a: A, b: B) {
 
 ### New instances
 
-Also it may be unsafe to create new objects:
+Also, it may be unsafe to create new objects:
 ```kotlin
 open class A {
     // 1) Creating instances OF the opened class cause problems
@@ -303,7 +303,7 @@ fun test(q: Q, p: P) {
 }
 ```
 
-It is only possible to assign new object of class `C` to self-type `Self(C)` instead of `this@decl` (relating to the declaration receiver) if the following restrictions satisfied:
+It is only possible to assign a new object of class `C` to self-type `Self(C)` instead of `this@decl` (relating to the declaration receiver) if the following restrictions satisfied:
 1. `C` is final;
 2. Type of `this@decl` w.r.t. flow typing equals to `C` or it is an intersection type with `C`;
 3. `C` is declared in the same module with call-site.
@@ -395,7 +395,7 @@ fun test(c: Comparable, a: A, b: B) {
 }
 ```
 
-So it is principal thing that derived class should tell base, what type bound should input parameter have. Example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
+So it is the principal thing that derived class should tell base, what type bound should input parameter have. Example from [YouTrack](https://youtrack.jetbrains.com/issue/KT-6494):
 ```kotlin
 interface Comparable<in T> {
     fun compareTo(other: T): Int
@@ -464,7 +464,7 @@ fun test(factory: ConcreteFactory) {
 
 #### Contravariant & invariant
 
-There are same problems as for input position:
+There are the same problems as for input position:
 ```kotlin
 abstract class Base {
     abstract fun createConsumer(): In<Self>
@@ -497,7 +497,7 @@ fun test() {
 }
 ```
 
-There is also the Swift approach with aforementioned restrictions. It is still rather complicated and have no reasonable use-cases.
+There is also the Swift approach with aforementioned restrictions. It is still rather complicated and has no reasonable use-cases.
 
 ### Input generic position
 
@@ -577,7 +577,7 @@ fun <T> T.f(x: T, y: Self): Pair<Self, Self> = x /* error: T !<: Self(T) */ to t
 fun <T> List<T>.shuffle(): Self = null!!
 ```
 
-Self-type's origin is always not-nullable:
+Self-type's bound is always not-nullable:
 ```kotlin
 fun A?.f(x: Self): Self? = this?.doSomething(x)
 // same as
@@ -591,9 +591,9 @@ TODO intersection & flexible for <: & CST.
 
 ## Self-types specification
 
-The main danger with self-types is that its materialization to a receiver type could be able to make type system unsound (like TypeScript's described below). To achieve safety three things should be properly defined: *safe-values*, *safe-positions* and *safe-calls*. First two represent safety induction base and the last one - induction step.
+The main danger with self-types is that its materialization to a receiver type could be able to make a type system unsound (like TypeScript's described below). To achieve safety, three things should be properly defined: *safe-values*, *safe-positions* and *safe-calls*. The first two represent something like safety induction base and the last one - induction step.
 
-Self-type's origin is a non-nullable nearest declaration receiver type (excluding context receivers). Let `this@decl` relate to the origin of type `D` w.r.t. flow typing.
+Self-type's bound is a non-nullable nearest declaration receiver type (excluding context receivers). Let `this@decl` relate to the bound of type `D` w.r.t. flow typing.
 
 ### Safe-values
 
@@ -606,7 +606,7 @@ It is needed to emphasize values that can be typed as `Self(C)`. They are:
 
 Subtyping rules are (self-type nullability handling is obvious):
 1. `B <: A <=> Self(B) <: Self(A)` to support override for methods with self-type in the return position;
-2. `B <: A <=> Self(B) <: A` to be able to assign value to its self-type origin (`val a: A = this`);
+2. `B <: A <=> Self(B) <: A` to be able to assign value to its self-type bound (`val a: A = this`);
 3. `Nothing <: Self(A)` and `Self(A) <: Any`;
 4. `B !<: Self(A)` if `B` does not fit rules (1) and (3).
 
@@ -630,23 +630,19 @@ Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturin
 * If `C` is a dispatch receiver then `Self(C)` behaves as a covariant type argument:
   * For a covariant type parameter `out F` captured type `K <: Self(C)`;
   * For invariant or contravariant type parameter `K` is ill-formed type.
-* If `C` is a extension receiver then `Self(C)` behaves as invariant type argument.
+* If `C` is an extension receiver then `Self(C)` behaves as invariant type argument.
 
 ### Safe-calls
 
-Now we should ensure that everything is ok on the call-site of methods with `Self` in their signature. We do that by rule that self-type always lands to the type of the receiver. So there are two cases to consider.
+Now we should ensure that everything is ok on the call-site of methods with `Self` in their signature. We do that by rule that self-type always materializes to the type of the receiver. So there are two cases to consider.
 
 If type of the receiver is not a self-type, then self-type materializes to the receiver type and there is no more self-type on the call-site. Value will be validated on the declaration-site by safe-values rule.
 
-Self-type lands to other self-type if and only if the type of the receiver is a self-type. By induction hypothesis we know that receiver value is safe, `Self` position is safe, so such a call can return only a safe value.
+Self-type materializes to another self-type if and only if the type of the receiver is a self-type. By induction hypothesis we know that receiver value is safe, `Self` position is safe, so such a call can return only a safe value.
 
 ### Java interoperability
 
-TODO
-
-### Js interoperability
-
-TODO
+TODO: replace with bound + metadata + mangling
 
 
 ## Other languages experience
@@ -698,7 +694,7 @@ func test1(c: COut) -> COut {
 }
 ```
 
-Swift prohibits using new object where `self` is expected:
+Swift prohibits using a new object where `self` is expected:
 ```swift
 final class NewSelf {
     // error: cannot convert return expression of type 'NewSelf' to return type 'Self'
@@ -802,7 +798,7 @@ extension PublishingStep {
 }
 ```
 
-Also `Swift` supports associated types and they can be used to achieve similar behavior but one for one-level hierarchy:
+Also `Swift` supports associated types, and they can be used to achieve similar behavior but one for one-level hierarchy:
 ```swift
 protocol AAssoc {
     associatedtype S
@@ -845,9 +841,9 @@ Compile examples with: `$ scala3 examples.scala`.
 Self-types [mean](https://docs.scala-lang.org/tour/self-types.html) something entirely different in Scala 2 (trait mixin requirement).
 Also there is `this.type` but it refers to the singleton type of current value.
 
-There is a [proposal](https://github.com/lampepfl/dotty/issues/7374) to introduce `ThisType` in Scala 3, however it is still raw enough.
+There is a [proposal](https://github.com/lampepfl/dotty/issues/7374) to introduce `ThisType` in Scala 3, however, it is still raw enough.
 
-Also there is a possibility to emulate self-types with an associated type but only for one layer of hierarchy and with some explicit casts:
+Also, there is a possibility to emulate self-types with an associated type but only for one layer of hierarchy and with some explicit casts:
 ```scala
 trait A:
   type S
