@@ -4,8 +4,8 @@
 % Vertical allignment: https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
 %\documentclass[handout,aspectratio=43]{beamer}
 %\documentclass[aspectratio=43]{beamer}
-\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
-%\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
+%\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
+\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
 
 % https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
 \usepackage{moresize}
@@ -226,7 +226,7 @@ fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .list
             \begin{itemize}
                 \item Поддерживаются в Scala и Swift
                 \item Используя дополнительные приведения типов, можно добиться желаемого поведения
-                \item Self-типы можно реализовать как частный случай ассоциированных
+                \item Self-типы можно реализовать как частный случай ассоциированных \pause
                 \item Запроса от пользователей на ассоциированные типы в Kotlin нет
                 \item Дизайн и реализация сложнее, чем для Self-типов
                 \item Ad-hoc реализация Self-типов не закрывает возможность добавления ассоциированных
@@ -306,9 +306,11 @@ fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .list
 interface Base {
     fun base(): ?\framebox{Self}? = ?\framebox{this}?
 } ?\pause?
+
 class Defived : Base {
     fun derived() { /* ... */ }
 } ?\pause?
+
 fun test(d: Derived) =
     d.base() // : ?\framebox{Derived}?
      .derived()
@@ -325,11 +327,11 @@ fun test(d: Derived) =
                     \end{itemize}
                 \end{block}
                 \pause
-                \begin{block}{Origin Self-типа}
-                    Назовём origin'ом Self-типа наиболее общий тип, в который Self может быть материализован. \pause
+                \begin{block}{Bound Self-типа}
+                    Назовём bound'ом Self-типа наиболее общий тип, в который Self может быть материализован. \pause \vspace{-1em}
                     \begin{itemize}
                         \item Совпадает с типом ресивера текущей декларации
-                        \item Для \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| origin'ом является \mintinline{kotlin}|Base| (обозначение \underline{\mintinline{kotlin}|Self(Base)|})
+                        \item Для \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| bound'ом является \mintinline{kotlin}|Base| (обозначение \underline{\mintinline{kotlin}|Self(Base)|})
                         \item \mintinline{kotlin}|scope(Self(C))| $\equiv$ \mintinline{kotlin}|scope(C)|
                     \end{itemize}
                 \end{block}
@@ -365,21 +367,23 @@ fun test(a: A, b: B) {
         \begin{block}{Правила подтипизации}
             Определяют, в переменные каких типов можно присваивать Self-тип и наоборот.
             \begin{enumerate}
-                \item \label{itm:covariant-origin} \mintinline{kotlin}|B <: A| $\iff$ \texttt{Self(B) <: Self(A)}
+                \item \label{itm:covariant-bound} \mintinline{kotlin}|B <: A| $\iff$ \texttt{Self(B) <: Self(A)}
                 \begin{itemize}
                     \item Делает переопределение метода с Self-типом в исходящей позиции корректным
                     \item \texttt{scope(A)} $\subset$ \texttt{scope(B)} и \texttt{scope(Self(A))} $\subset$ \texttt{scope(Self(B))},\\ так как \texttt{scope(Self(C))} $\equiv$ \texttt{scope(C)} \pause
                 \end{itemize}
-                \item \label{itm:this-subtype} \texttt{B <: A} $\iff$ \texttt{Self(B) <: A}, так как \texttt{scope(A)} $\subset$ \texttt{scope(Self(B))} \pause
+                \item \label{itm:this-subtype} \texttt{B <: A} $\iff$ \texttt{Self(B) <: A}, так как \texttt{scope(A)} $\subset$ \texttt{scope(Self(B))}
+                \begin{itemize}
+                    \item Сохраняет обратную совместимость: \mintinline{kotlin}|val a: A = this|
+                \end{itemize} \pause
                 \item \label{itm:any-nothing} \texttt{Nothing <: Self(A)} и \texttt{Self(A) <: Any} \pause
-                \item \label{itm:no-subtypes} \texttt{B  !<: Self(A)}, если \texttt{B} не подходит под правила (\ref{itm:covariant-origin}) и (\ref{itm:any-nothing})
+                \item \label{itm:no-subtypes} \texttt{B  !<: Self(A)}, если \texttt{B} не подходит под правила (\ref{itm:covariant-bound}) и (\ref{itm:any-nothing})
             \end{enumerate}
         \end{block}
         \pause
         \begin{block}{Безопасность присваиваний}
             \begin{enumerate}
                 \item \mintinline{kotlin}|this|, ссылающийся на ресивер \mintinline{kotlin}|C|, имеет тип \mintinline{kotlin}|Self(C)|
-                \item Правило (\ref{itm:this-subtype}) сохраняет обратную совместимость: \mintinline{kotlin}|val a: A = this|
                 \item Правило (\ref{itm:no-subtypes}) не позволяет использовать объект, отличный от ресивера, в качестве Self
             \end{enumerate}
         \end{block}
@@ -428,7 +432,7 @@ fun test(q: Q, p: P) {
                 \begin{block}{Ограничения}
                     \begin{itemize}
                         \item Класс \texttt{C} должен быть финальным
-                        \item Тип \mintinline{kotlin}|this|\footnote{Ресивер текущей декларации (c типом origin'а Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
+                        \item Тип \mintinline{kotlin}|this|\footnote{Ресивер текущей декларации (c типом bound'а Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
                         \item Тип \texttt{C} объявлен в том же модуле, в котором создаётся объект\footnote{Иначе открытие класса нарушало совместимость исходных кодов}
                     \end{itemize}
                 \end{block}
@@ -536,7 +540,20 @@ abstract class A {
     \subsection{Реализация Self-типов в компиляторе kotlinc (K2)}
 
     \begin{frame}{Реализация Self-типов в компилиторе Kotlin}
-        TODO % TODO
+%        ST\footnote{Super Types --- непосредственные супертипы типа}
+%        CST\footnote{Common Super Types --- ближайший общий супертип двух типов}
+        \begin{enumerate}
+            \item Идентификатор \texttt{Self} введён как ключевое слово языка
+            \item Введён новый вид (kind) типов --- Self-типы
+            \item В систему типов добавлены описанные в спецификации правила:
+            \begin{itemize}
+                \item Правило подтипизации
+                \item Правило определения непосредственных супертипов
+                \item Правило вычисления ближайших общих супертипов
+            \end{itemize}
+            \item Реализован скоуп, материализующий Self-тип в тип ресивера
+            \item Реализовано преобразование, подменяющее Self-тип на bound и метаинформацию, при переходе к промежуточному представлению бекенда компилятора (IR)
+        \end{enumerate}
     \end{frame}
 
     \subsection{Тестирование реализации}
@@ -550,7 +567,7 @@ abstract class A {
                 \item Некорректно создающих новый объект, где ожидается Self-тип
                 \item Использующих Self-тип в небезопасной позиции
             \end{itemize}
-            \item С помощью Box-тестов протестирована работоспособность кода с Self-типами
+            \item Протестирована работоспособность кода с Self-типами
         \end{itemize}
     \end{frame}
 
@@ -563,17 +580,18 @@ abstract class A {
             \begin{enumerate}
                 \item В каких позициях разрешено использовать Self-тип
                 \item Каковы меры по обеспечению безопасности системы типов
-            \end{enumerate}
-            \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему:
+            \end{enumerate} \pause
+            \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin:
             \begin{enumerate}
-                \item Прописаны правила подтипизации и типизации значений
+                \item Прописаны правила подтипизации, вычисления супертипов
+                \item Перечислены условия типизации значений Self-типом
                 \item Указаны безопасные позиции использования Self-типа
-                \item Введено правило материализации
-            \end{enumerate}
-            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет TODO % TODO добавления неявного типового параметра с рекурсивным ограничением
+                \item Введено правило материализации, показана его безопасность
+            \end{enumerate} \pause
+            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа материализации Self-типа \pause
             \item Протестирована полученная реализация:
             \begin{enumerate}
-                \item Покрывает необходимые сценарции использования
+                \item Покрывает необходимые сценарии использования
                 \item Не допускает небезопасный код с Self-типами
             \end{enumerate}
         \end{enumerate}
