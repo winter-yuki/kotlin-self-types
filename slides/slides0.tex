@@ -123,6 +123,11 @@
 \usepackage{blkarray}
 \usepackage{hyperref}
 
+% Speaker notes
+%--------------------------------------
+%\setbeameroption{show notes on second screen=right} % enable speaker notes
+%--------------------------------------
+
 \author[Андрей Стоян]{Стоян Андрей Сергеевич\\ {\footnotesize руководитель:} Новожилов Дмитрий Павлович}
 \institute[ИТМО/SE]{Университет ИТМО\\Разработка программного обеспечения/Software engineering}
 
@@ -148,13 +153,16 @@
     \subsection{Проблематика}
 
     \begin{frame}[fragile]{Рекурсивные дженерики}
-        Выразить на уровне типов, что метод возвращает объект наследника, на котором он был вызван, можно с помощью типового параметра с рекурсивным ограничением.
-        \pause
+        Выразить в декларации, что метод возвращает объект наследника, на котором он был вызван, можно с помощью типового параметра с рекурсивным ограничением.
+        \pause\note{
+            Рассмотрим следующую задачу. Допустим мы хотим выразить в декларации метода, что он возвращает объект наследника, на котором он был вызван. Это можно сделать с помощью типового параметра с рекурсивным ограничением --- рекурсивного дженерика.
+        }
+
         \begin{block}{Пример: персистентные коллекции с рекурсивными ограничениями}
             \begin{minted}[escapeinside=??]{kotlin}
 interface PCollection<out E, ?\framebox{out S : PCollection<E, S>}?> {
     fun add(value: @UnsafeVariance E): ?\framebox{S}?
-} ?\pause?
+} ?\pause\note{\\\\Рассмотрим пример --- интерфейс персистентной коллекции.}?
 interface PList<out E, ?\framebox{out S : PList<E, S>}?> : PCollection<E, ?\framebox{S}?> {
     fun listSpecific()
 } ?\pause?
@@ -162,7 +170,7 @@ fun <T, ?\framebox{L}?> test(xs: ?\framebox{L}?, x: T) where ?\framebox{L : PLis
     xs.add(x) /* : ?\framebox{L}? */ .listSpecific()
             \end{minted}
         \end{block}
-        \pause
+
         \begin{block}{Недостатки}
             \begin{itemize}
                 \item Возникающий паттерн рекурсивного ограничения распространяется по всему коду
@@ -191,7 +199,8 @@ fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .list
         \begin{block}{Недостатки}
             \begin{itemize}
                 \item Много boilerplate code: переопределить каждый метод в каждом наследнике
-                \item Компилятор не контроллирует, что при добавлении метода в базовый класс также добавлен переопределяющий во всех наследниках
+                \item Нет контроля компилятора, что abstract override методы не были забыты
+                \item Работает только для возвращаемого типа (типы параметров обязаны совпадать)
             \end{itemize}
         \end{block}
     \end{frame}
@@ -203,7 +212,7 @@ fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .list
         \begin{block}{Пример: персистентные коллекции с Self-типами}
             \begin{minted}[escapeinside=??]{kotlin}
 interface PCollection<out E> {
-    fun add(value: @UnsafeVariance E): ?\framebox{Self}? // исходящая позиция Self-типа
+    fun add(value: @UnsafeVariance E): ?\framebox{Self}?
 } ?\pause?
 interface PList<out E> : PCollection<E> {
     fun listSpecific()
@@ -502,7 +511,7 @@ sealed interface Data {
         \pause
         \begin{block}{Инвариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface Inv<T> { fun id(x: ?\framebox{T}?): ?\framebox{T}? }|}
             \begin{itemize}
-                \item Можно использовать во входящих и исходящих позициях в декларациях методов
+                \item Можно использовать в произвольных позициях в декларациях методов
                 \item Не устанавливает отношения подтипизации: \texttt{Inv<B> !<:> Inv<A>}
             \end{itemize}
         \end{block}
@@ -515,23 +524,21 @@ sealed interface Data {
     \begin{frame}[fragile]{Материализация Self-типов}
         \begin{block}{Правило материализации}
             Self-тип в сигнатуре вызываемого метода всегда переписывается в тип ресивера.
-            \begin{itemize}
-                \item Если ресивер --- Self-тип, то Self-тип метода переписывается в Self-тип ресивера
-            \end{itemize}
         \end{block}
         \pause
-        \begin{block}{Безопасность материализации}
+        \begin{block}{Безопасность Self-типов}
             \begin{enumerate}
-                \item Значение материализованного Self-типа --- всегда корректный экземпляр типа ресивера (убедились выше), в том числе если ресивер имеет Self-тип
-                \item Self-тип можно получить только вызвав метод на Self-типе, а \texttt{A !<: Self(A)}
+                \item Значение Self-типа безопасно относительно материализации (правила выше)
+                \item Если ресивер имеет тип \texttt{A} $\neq$ \texttt{Self}, \texttt{Self} материализуется в \texttt{A}, а \texttt{A !<: Self(A)}
+                \item Если ресивер имеет тип \texttt{Self(B)}, то \texttt{Self(A)} декларации материализуется в \texttt{Self(B)}, и известно, что значение ресивера безопасно, материализуемое значение безопасно
             \end{enumerate} \pause
             \begin{minted}[escapeinside=??]{kotlin}
 abstract class A {
     fun self(): Self = this ?\pause?
-    fun safeSelf():       Self/*(A)*/ =
-        this /* : Self(A) */ .self() // : ?\colorbox{yellow}{Self(A)}?, ?\textcolor{junglegreen}{ok}?, Self(A) <: Self(A) ?\pause?
     fun unsafeSelf(a: A): Self/*(A)*/ =
         a    /* : A       */ .self() // : ?\colorbox{yellow}{A}?, ?\textcolor{red}{ошибка компиляции}?
+    fun safeSelf():       Self/*(A)*/ =
+        this /* : Self(A) */ .self() // : ?\colorbox{yellow}{Self(A)}?, ?\textcolor{junglegreen}{ok}?, Self(A) <: Self(A) ?\pause?
 }
             \end{minted}
         \end{block}
