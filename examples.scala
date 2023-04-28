@@ -5,7 +5,7 @@ trait A:
   def inv(x: S): S
 
   def q(): this.type
-  def w(x: this.type): Uni
+  def w(x: this.type): Unit
 
 class B extends A:
   override type S <: B
@@ -41,4 +41,20 @@ def test(): Unit = {
 @main
 def main() = {
   test()
+}
+
+trait PCollection[T] {
+  type S
+  def add(x: T): S
+}
+
+trait PList[T] extends PCollection[T] {
+  type S <: PList[T]
+  def listSpecific: Unit
+}
+
+class PListImpl[T] extends PList[T] {
+  type S = PListImpl[T]
+  override def add(x: T): PListImpl[T] = ???
+  override def listSpecific: Unit = ???
 }

@@ -6,7 +6,7 @@
       <sumatra-path />
       <pdf-viewer>BUILT-IN-PDF-VIEWER</pdf-viewer>
       <viewer-command />
-      <compiler-arguments>-shell-e -synctex=1 --shell-escape -interaction=nonstopmode</compiler-arguments>
+      <compiler-arguments>-shell-e -synctex=1 --shell-escape -interaction=nonstopmode -bibtex</compiler-arguments>
       <envs />
       <main-file>$PROJECT_DIR$/diploma/diploma.tex</main-file>
       <output-path>$PROJECT_DIR$/diploma/out</output-path>

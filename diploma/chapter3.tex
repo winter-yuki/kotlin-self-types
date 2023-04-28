@@ -1,1 +1,98 @@
-\section{Интеграция Self-типов в типовую систему языка Kotlin}
+\section{Интеграция Self-типов в типовую систему языка Kotlin} \label{sec:integration}
+
+В данной главе будет дано описание интеграции Self-типов в типовую систему языка Kotlin.
+Ключевой задачей является сохранение безопасности системы типов (опр.~\ref{def:sound}) вместе с поддержкой наибольшего количества полезных применений Self-типов, описанных ранее в~\ref{subsec:applications}.
+
+%Для этого мы рассмотрим, какие значения могут иметь Self-тип вместе с правилами подтипизации и в каких позициях Self-тип безопасно использовать.
+
+TODO % TODO
+
+%Далее будем пользоваться следующими вспомогательными определениями.
+%
+%\begin{minted}{kotlin}
+%    fun interface In<in T> {
+%        fun accept(x: T)
+%    }
+%
+%    fun interface Out<out T> {
+%        fun produce(): T
+%    }
+%
+%    fun interface Inv<T> {
+%        fun id(x: T): T
+%    }
+%\end{minted}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Значения Self-типа}
+
+TODO % TODO
+
+\subsubsection{Небезопасные присваивания}
+
+TODO % TODO
+
+\subsubsection{Создание новых объектов Self-типа}
+
+TODO % TODO
+
+\subsection{Позиции Self-типа}
+
+TODO % TODO
+
+\subsubsection{Простая исходящая позиция}
+
+TODO % TODO
+
+\subsubsection{Простая входная позиция}
+
+TODO % TODO
+
+\subsubsection{Параметрическая исходящая позиция}
+
+TODO % TODO
+
+\subsubsection{Параметрическая входная позиция}
+
+TODO % TODO
+
+\subsubsection{Параметр наследуемого класса}
+
+TODO % TODO
+
+\subsubsection{Функции-расширения}
+
+TODO % TODO
+
+\subsection{Вызовы функций с Self-типами}
+
+TODO % TODO
+
+\subsection{Взаимодействие с Java}
+
+TODO % TODO
