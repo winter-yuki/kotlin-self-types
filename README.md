@@ -624,7 +624,7 @@ Self-types behave like corresponding covariant recursive generic parameter with 
 
 Self-type [positions](https://kotlinlang.org/spec/declarations.html#type-parameter-variance):
 * If `C` is a dispatch receiver then `Self(C)` can be used only in covariant positions.
-* If `C` is a extension receiver then `Self(C)` can be used in all positions.
+* If `C` is an extension receiver then `Self(C)` can be used in all positions.
 
 Self-type [capturing](https://kotlinlang.org/spec/type-system.html#type-capturing) :
 * If `C` is a dispatch receiver then `Self(C)` behaves as a covariant type argument:
@@ -873,11 +873,9 @@ def test(): Unit = {
 }
 ```
 
-### Python
+### Java Manifold
 
-* https://peps.python.org/pep-0673/
-
-In Python `Self` type only in output position of methods is required.
+TODO
 
 ### TypeScript
 
@@ -912,3 +910,9 @@ function test(x: Box): boolean {
 
 test(derived) // prints: TS type system is broken
 ```
+
+### Python
+
+* https://peps.python.org/pep-0673/
+
+Like in TypeScript, Self-types in Python are not safe.

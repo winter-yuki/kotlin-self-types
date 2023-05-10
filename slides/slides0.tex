@@ -4,8 +4,8 @@
 % Vertical allignment: https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
 %\documentclass[handout,aspectratio=43]{beamer}
 %\documentclass[aspectratio=43]{beamer}
-%\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
-\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
+\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
+%\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
 
 % https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
 \usepackage{moresize}
@@ -124,6 +124,7 @@
 \usepackage{hyperref}
 
 % Speaker notes
+% https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
 %--------------------------------------
 %\setbeameroption{show notes on second screen=right} % enable speaker notes
 %--------------------------------------
@@ -154,15 +155,12 @@
 
     \begin{frame}[fragile]{Рекурсивные дженерики}
         Выразить в декларации, что метод возвращает объект наследника, на котором он был вызван, можно с помощью типового параметра с рекурсивным ограничением.
-        \pause\note{
-            Рассмотрим следующую задачу. Допустим мы хотим выразить в декларации метода, что он возвращает объект наследника, на котором он был вызван. Это можно сделать с помощью типового параметра с рекурсивным ограничением --- рекурсивного дженерика.
-        }
-
+        \pause
         \begin{block}{Пример: персистентные коллекции с рекурсивными ограничениями}
             \begin{minted}[escapeinside=??]{kotlin}
 interface PCollection<out E, ?\framebox{out S : PCollection<E, S>}?> {
     fun add(value: @UnsafeVariance E): ?\framebox{S}?
-} ?\pause\note{\\\\Рассмотрим пример --- интерфейс персистентной коллекции.}?
+} ?\pause?
 interface PList<out E, ?\framebox{out S : PList<E, S>}?> : PCollection<E, ?\framebox{S}?> {
     fun listSpecific()
 } ?\pause?
@@ -170,7 +168,7 @@ fun <T, ?\framebox{L}?> test(xs: ?\framebox{L}?, x: T) where ?\framebox{L : PLis
     xs.add(x) /* : ?\framebox{L}? */ .listSpecific()
             \end{minted}
         \end{block}
-
+        \pause
         \begin{block}{Недостатки}
             \begin{itemize}
                 \item Возникающий паттерн рекурсивного ограничения распространяется по всему коду
@@ -178,6 +176,18 @@ fun <T, ?\framebox{L}?> test(xs: ?\framebox{L}?, x: T) where ?\framebox{L : PLis
             \end{itemize}
         \end{block}
     \end{frame}
+%    \note{
+%        Рассмотрим следующую задачу. Допустим мы хотим выразить в декларации метода, что он возвращает объект наследника, на котором он был вызван. Это можно сделать с помощью типового параметра с рекурсивным ограничением --- рекурсивного дженерика.
+%    }
+%    \note{\\\\
+%        Рассмотрим пример --- интерфейс персистентной коллекции. Он содержит метод добавления элемента, который возвращает новую коллекцию, в которой этот элемент уже присутствует. Чтобы выразить, что метод возвращает именно того наследника коллекции, на котором он был вызван, у интерфейса присутствует дополнительный типовой параметр.
+%    }
+%    \note{\\\\
+%        Чтобы создать наследника этого интерфейса, например, интерфейс персистентного списка, нужно повторить паттерн с рекурсивным ограничением.
+%    }
+%    \note{\\\\
+%        Чтобы теперь воспользоваться интерфейсом списка, нужно снова повторить паттерн рекурсивного дженерика, однако действительно мы видим, что метод добавления возвращает нужный тип.
+%    }
 
     \begin{frame}[fragile]{Добавление abstract override методов}
         Можно добавить переопределяющие методы с более специфичным возвращаемым типом.
@@ -187,18 +197,18 @@ fun <T, ?\framebox{L}?> test(xs: ?\framebox{L}?, x: T) where ?\framebox{L : PLis
             \begin{minted}[escapeinside=??]{kotlin}
 interface PCollection<out E> {
     fun add(value: @UnsafeVariance E): ?\framebox{PCollection<E>}?
-} ?\pause?
+} ?\pause\note{\\\\Снова в качестве примера рассмотрим интерфейс персистентной коллекции, но теперь воспользуемся подходом с abstract override методами. Видим, что теперь дополнительного типового параметра нет.}?
 interface PList<out E> : PCollection<E> {
     abstract override fun add(value: @UnsafeVariance E): ?\framebox{PList<E>}?
     fun listSpecific()
-} ?\pause?
+} ?\pause\note{\\\\В интерфейсе персистентного списка тоже нет больше дополнительного типового параметра, однако добавлена декларация метода, уточняющая возвращаемый тип метода из базового интерфейса.}?
 fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .listSpecific()
             \end{minted}
         \end{block}
         \pause
         \begin{block}{Недостатки}
             \begin{itemize}
-                \item Много boilerplate code: переопределить каждый метод в каждом наследнике
+                \item Много шаблонного кода: переопределить каждый метод в каждом наследнике
                 \item Нет контроля компилятора, что abstract override методы не были забыты
                 \item Работает только для возвращаемого типа (типы параметров обязаны совпадать)
             \end{itemize}
@@ -288,8 +298,8 @@ fun <T> test(xs: PList<T>, x: T) = xs.add(x) /* : ?\framebox{PList<T>}? */ .list
     \subsection{Интеграция Self-типов в типовую систему Kotlin}
 
     \begin{frame}[fragile]{Ресиверы в Kotlin}
-        \begin{block}{Ресивер функции}
-            Объект, на котором вызывается функция.
+        \begin{block}{(Dispatch) Ресивер функции}
+            Специальный параметр функции, по которому происходит виртуальная диспетчеризация вызова к реализации наследника.
             Доступен как \mintinline{kotlin}|this| в её теле.
             \begin{itemize}
                 \item Например, в вызове \mintinline{kotlin}|"a".plus("b")| строка \mintinline{kotlin}|"a"| является ресивером для функции \mintinline{kotlin}|plus|
@@ -536,9 +546,9 @@ sealed interface Data {
 abstract class A {
     fun self(): Self = this ?\pause?
     fun unsafeSelf(a: A): Self/*(A)*/ =
-        a    /* : A       */ .self() // : ?\colorbox{yellow}{A}?, ?\textcolor{red}{ошибка компиляции}?
+        a    /* : A       */ .self() // : ?\colorbox{yellow}{A}?, ?\textcolor{red}{ошибка компиляции}? ?\pause?
     fun safeSelf():       Self/*(A)*/ =
-        this /* : Self(A) */ .self() // : ?\colorbox{yellow}{Self(A)}?, ?\textcolor{junglegreen}{ok}?, Self(A) <: Self(A) ?\pause?
+        this /* : Self(A) */ .self() // : ?\colorbox{yellow}{Self(A)}?, ?\textcolor{junglegreen}{ok}?, Self(A) <: Self(A)
 }
             \end{minted}
         \end{block}
