@@ -4,8 +4,8 @@
 % Vertical allignment: https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
 %\documentclass[handout,aspectratio=43]{beamer}
 %\documentclass[aspectratio=43]{beamer}
-\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
-%\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
+%\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
+\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
 
 % https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
 \usepackage{moresize}
@@ -277,7 +277,13 @@
     \subsection{Анализ существующих решений}
 
     \begin{frame}[fragile]{Решения в других языках}
-        \note<1->{2:45 - 3:30}
+        \note<1->{
+            2:45 - 3:30
+            \\\\
+            В дальнейшей работе я адаптирую проверенные безопасные решения к специфике языка Kotlin.
+            \\\\
+            Для этого я определил во-первых правила подтипизации для Self-типа.
+        }
 
         \begin{block}{Языки без наследования: Haskell, Rust...}
             Self-типы присутствуют и тривиально ссылаются на тип, для которого реализуется трейт.
@@ -333,7 +339,11 @@
     \end{frame}
 
     \begin{frame}[fragile]{Правила Self-типов}
-        \note<1->{4:15 - 5:00}
+        \note<1->{
+            4:15 - 5:00
+            \\\\
+            Далее эти правила я реализовал в компиляторе Kotlin.
+        }
 
         \begin{block}{Значения Self-типа}
             Чтобы новый объект \mintinline{kotlin}|C(..)| имел Self-тип, необходимо \mintinline{kotlin}|this.getClass() == C::class|.
@@ -391,7 +401,11 @@
         \note<1->{5:30 - 6:00}
 
         \begin{itemize}
-            \item Протестирована компилируемость описанных сценариев использования
+            \item Протестирована компилируемость различных сценариев использования
+            \begin{itemize}
+                \item Self-типы в различных позициях
+                \item Создание новых объектов Self-типа
+            \end{itemize}
             \item Протестирован недопуск системой типов некорректных программ с Self-типами:
             \begin{itemize}
                 \item Использующих ссылку на другой объект, где ожидается Self-тип
@@ -409,25 +423,10 @@
         \note<1->{6:00 - 6:30}
 
         \begin{enumerate}
-            \item Проанализированы существующие реализации Self-типов в других языках:
-            \begin{enumerate}
-                \item В каких позициях разрешено использовать Self-тип
-                \item Какие значения могут иметь Self-тип
-                \item Каковы меры по обеспечению безопасности системы типов
-            \end{enumerate}
-            \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin:
-            \begin{enumerate}
-                \item Прописаны правила подтипизации, вычисления супертипов
-                \item Перечислены условия типизации значений Self-типом
-                \item Указаны безопасные позиции использования Self-типа
-                \item Введено правило материализации
-            \end{enumerate}
-            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа материализации Self-типа
-            \item Протестирована полученная реализация:
-            \begin{enumerate}
-                \item Покрывает необходимые сценарии использования
-                \item Не допускает небезопасный код с Self-типами
-            \end{enumerate}
+            \item Проанализированы существующие реализации Self-типов в других языках на предмет мер по обеспечению безопасности системы с Self-типами
+            \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin путём доопределения правил
+            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа материализации Self-типов
+            \item Полученная реализация протестирована на предмет допуска кода валидных сценариев использования и отвержения небезопасного кода
         \end{enumerate}
     \end{frame}
 
