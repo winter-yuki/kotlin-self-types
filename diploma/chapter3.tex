@@ -1,98 +1,126 @@
-\section{Интеграция Self-типов в типовую систему языка Kotlin} \label{sec:integration}
+\section{Анализ существующих реализаций Self-типов}
 
-В данной главе будет дано описание интеграции Self-типов в типовую систему языка Kotlin.
-Ключевой задачей является сохранение безопасности системы типов (опр.~\ref{def:sound}) вместе с поддержкой наибольшего количества полезных применений Self-типов, описанных ранее в~\ref{subsec:applications}.
-
-%Для этого мы рассмотрим, какие значения могут иметь Self-тип вместе с правилами подтипизации и в каких позициях Self-тип безопасно использовать.
-
-TODO % TODO
-
-%Далее будем пользоваться следующими вспомогательными определениями.
+%\begin{minted}[escapeinside=??]{kotlin}
+%interface Base {
+%    fun base(): ?\framebox{Self}? = ?\framebox{this}?
+%}
 %
-%\begin{minted}{kotlin}
-%    fun interface In<in T> {
-%        fun accept(x: T)
-%    }
+%class Defived : Base {
+%    fun derived() { /* ... */ }
+%}
 %
-%    fun interface Out<out T> {
-%        fun produce(): T
-%    }
-%
-%    fun interface Inv<T> {
-%        fun id(x: T): T
-%    }
+%fun test(d: Derived) = d.base() /* : ?\framebox{Derived}? */ .derived()
 %\end{minted}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\subsection{Значения Self-типа}
-
-TODO % TODO
-
-\subsubsection{Небезопасные присваивания}
-
-TODO % TODO
-
-\subsubsection{Создание новых объектов Self-типа}
-
-TODO % TODO
-
-\subsection{Позиции Self-типа}
-
-TODO % TODO
-
-\subsubsection{Простая исходящая позиция}
-
-TODO % TODO
-
-\subsubsection{Простая входная позиция}
-
-TODO % TODO
-
-\subsubsection{Параметрическая исходящая позиция}
-
-TODO % TODO
-
-\subsubsection{Параметрическая входная позиция}
-
-TODO % TODO
-
-\subsubsection{Параметр наследуемого класса}
-
-TODO % TODO
-
-\subsubsection{Функции-расширения}
-
-TODO % TODO
-
-\subsection{Вызовы функций с Self-типами}
-
-TODO % TODO
-
-\subsection{Взаимодействие с Java}
-
-TODO % TODO
+%\begin{definition}
+%    \label{def:materialization}
+%    \term{Материализация Self-типа} --- подмена Self-типа в сигнатуре метода на тип ресивера в скоупе типа этого ресивера.
+%\end{definition}
+%
+%Так для примера выше \texttt{Self} материализуется в \texttt{Derived} в его скоупе: \\
+%$(base: Base.() -> ?\framebox{Derived}?) \in scope(Derived)$
+%
+%\begin{definition}
+%    \label{def:bound}
+%    \term{Bound Self-типа} --- наиболее общий тип, в который Self-тип может быть материализован.
+%\end{definition}
+%
+%Bound Self-типа совпадает с типом ресивера текущей декларации.
+%В примере выше для \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| bound'ом является \mintinline{kotlin}|Base| (обозначение \underline{\mintinline{kotlin}|Self(Base)|}).
+%
+%В данной главе будет дано описание интеграции Self-типов в типовую систему языка Kotlin.
+%Ключевой задачей является сохранение безопасности системы типов (опр.~\ref{def:sound}) вместе с поддержкой наибольшего количества полезных применений Self-типов, описанных ранее в~\ref{subsec:applications}.
+%
+%%Для этого мы рассмотрим, какие значения могут иметь Self-тип вместе с правилами подтипизации и в каких позициях Self-тип безопасно использовать.
+%
+%TODO % TODO
+%
+%%Далее будем пользоваться следующими вспомогательными определениями.
+%%
+%%\begin{minted}{kotlin}
+%%    fun interface In<in T> {
+%%        fun accept(x: T)
+%%    }
+%%
+%%    fun interface Out<out T> {
+%%        fun produce(): T
+%%    }
+%%
+%%    fun interface Inv<T> {
+%%        fun id(x: T): T
+%%    }
+%%\end{minted}
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%\subsection{Значения Self-типа}
+%
+%TODO % TODO
+%
+%\subsubsection{Небезопасные присваивания}
+%
+%TODO % TODO
+%
+%\subsubsection{Создание новых объектов Self-типа}
+%
+%TODO % TODO
+%
+%\subsection{Позиции Self-типа}
+%
+%TODO % TODO
+%
+%\subsubsection{Простая исходящая позиция}
+%
+%TODO % TODO
+%
+%\subsubsection{Простая входная позиция}
+%
+%TODO % TODO
+%
+%\subsubsection{Параметрическая исходящая позиция}
+%
+%TODO % TODO
+%
+%\subsubsection{Параметрическая входная позиция}
+%
+%TODO % TODO
+%
+%\subsubsection{Параметр наследуемого класса}
+%
+%TODO % TODO
+%
+%\subsubsection{Функции-расширения}
+%
+%TODO % TODO
+%
+%\subsection{Вызовы функций с Self-типами}
+%
+%TODO % TODO
+%
+%\subsection{Взаимодействие с Java}
+%
+%TODO % TODO
