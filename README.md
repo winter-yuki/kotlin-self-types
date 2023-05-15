@@ -647,16 +647,7 @@ TODO: replace with bound + metadata + mangling
 
 ## Other languages experience
 
-Languages without inheritance (and with type classes, e.g. Haskell and Rust) will not be discussed because self-types implementation is trivial for them. Methods on the call site just have signatures from the declaration site (in type class instance). No variance problems matter.
-```haskell
-class Incrementable a where
-  increment :: a -> a
-
-instance Incrementable Int where
-  increment = (+ 1)
-
-test = increment 42 :: Int
-```
+Languages without inheritance (and with type classes, e.g. Haskell and Rust) will not be discussed because self-types implementation is trivial for them (and called *recursive types*).
 
 ### Swift
 
