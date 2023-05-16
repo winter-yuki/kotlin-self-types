@@ -815,7 +815,7 @@
 
     \begin{frame}{Соответствие правил для Kotlin с [\href{https://dl.acm.org/doi/pdf/10.1145/2888392}{Ryu et al, 2016}]}
         \begin{itemize}
-            \item Self-тип --- это точный тип  $\mu t\ldotp \{ \overline{l_i : \tau_i} \}$(exact type)
+            \item Self-тип --- это точный тип  $\mu t\ldotp \{ \overline{l_i : \tau_i} \}$ (exact type)
             \item А любой другой --- экзистенциальный тип $\exists s \triangleleft \alpha \ldotp s$ (inexact type)
         \end{itemize}
 
@@ -995,6 +995,8 @@
 
     \subsection{Реализация Self-типов в компиляторе}
 
-    % TODO архитектура компиляторап
+    \begin{frame}{Архитектура компилятора Kotlin (K2)}
+        \includegraphics[width=\textwidth]{fig/arch}
+    \end{frame}
 
 \end{document}
