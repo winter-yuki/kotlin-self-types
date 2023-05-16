@@ -142,3 +142,7 @@ func testAssoc(_ x: some AAssoc, _ y: some AAssoc) {
 // func testAssocAny(_ x: any AAssoc, _ y: any AAssoc) {
 //     x.g(x: x.f())
 // }
+
+func testSomeConsumeKek(x: some ConstraintOnly, y: some ConstraintOnly) {
+    x.consume(y.produce())
+}
