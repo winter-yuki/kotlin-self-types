@@ -127,6 +127,7 @@
 \usepackage{mathtools}
 \usepackage{color}
 \usepackage{graphicx}
+\usepackage{wasysym}
 
 % Speaker notes
 % https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
@@ -162,24 +163,25 @@
 
     \mode<all>
     \begin{frame}[fragile]{Рекурсивные дженерики}
-        \note<1->{
-            0:30 - 1:15
-            \\\\
-            Система типов языка Котлин недостаточно гибка на данный момент.
-            \\\\
-            Рассмотрим пример.
-            Метод add персистентной коллекции возвращает новую коллекцию с уже добавленным элементом.
-            Чтобы вернуть именно тот тип, на котором он был вызван, введём типовой параметр с рекурсивным ограничением.
+        \note<1->{0:30 - 1:15}
+        \note<1>{
+            \begin{enumerate}
+                \item Система типов языка Котлин недостаточно гибка на данный момент
+                \item В качестве примера рассмотрим следующую задачу
+                \item Метод add персистентной коллекции возвращает новую коллекцию с уже добавленным элементом
+                \item Чтобы вернуть именно тот тип, на котором он был вызван, введём типовой параметр с рекурсивным ограничением
+            \end{enumerate}
         }
-        \note<2->{
-            \\\\
-            Этот параметр требуется распространить по всей иерархии наследования.
+        \note<2>{
+            \begin{enumerate}
+                \item Этот параметр требуется распространить по всей иерархии наследования
+            \end{enumerate}
         }
-        \note<3->{
-            \\\\
-            Чтобы воспользоваться интерфейсом, требуется отдельный типовой параметр, однако тогда add возвращает тип с нужным ограничением.
-            \\\\
-            ....
+        \note<3>{
+            \begin{enumerate}
+                \item Чтобы воспользоваться интерфейсом, требуется отдельный типовой параметр
+                \item И тогда add возвращает тип с нужным ограничением: можно вызывать специфичные для списка методы
+            \end{enumerate}
         }
 
         Требуется выразить в типе, что метод возвращает тот же тип, на котором вызывается.
@@ -209,8 +211,25 @@
     \end{frame}
     \mode*
 
+    \mode<all>
     \begin{frame}[fragile]{Добавление abstract override методов}
         \note<1->{1:15 - 1:45}
+
+        \note<1>{
+            \begin{enumerate}
+                \item В базовом интерфейсе add возвращает коллекцию
+            \end{enumerate}
+        }
+        \note<2>{
+            \begin{enumerate}
+                \item В наследнике помещается abstract override метод с более специфичным возвращаемым типом
+            \end{enumerate}
+        }
+        \note<3>{
+            \begin{enumerate}
+                \item Теперь add возвращает тип своего ресивера --- список
+            \end{enumerate}
+        }
 
         Можно добавить переопределяющие методы с более специфичным возвращаемым типом.
 
@@ -237,17 +256,18 @@
             \end{itemize}
         \end{block}
     \end{frame}
+    \mode*
 
 
     \subsection{Существующие решения}
 
     \begin{frame}[fragile]{Self-типы}
-        \note<1->{
-            1:45 - 2:15
-            \\\\
-            У описанной проблемы существует каноническое решение --- Self-типы.
-            \\\\
-            ....
+        \note<1->{1:45 - 2:15}
+
+        \note<1>{
+            \begin{enumerate}
+                \item У описанной проблемы существует каноническое решение --- Self-типы
+            \end{enumerate}
         }
 
         \begin{itemize}
@@ -300,24 +320,29 @@
 
     \subsection{Анализ существующих решений}
 
-    \begin{frame}[fragile]{Решения в других языках}
-        \note<1->{
-            2:45 - 3:15
-            \\\\
-            ....
-            \\\\
-            Для объектно-ориентированных языков ситуация сложнее.
-            \\\\
-            ....
-            \\\\
-            В дальнейшей работе я адаптирую проверенные безопасные решения к специфике языка Kotlin.
-            \\\\
-            Для этого я определил во-первых правила подтипизации для Self-типа.
+    \begin{frame}[fragile]{Существующие реализации Self-типов}
+        \note<1->{2:45 - 3:15}
+
+        \note<1>{
+            \begin{enumerate}
+                \item Рассмотрим существующие реализации Self-типов в других языках
+                \item В языках без наследования Self-типы присутствуют в виде рекурсивных типов
+            \end{enumerate}
         }
 
         \begin{block}{Языки без наследования: Haskell, Rust...}
             Self-типы присутствуют в виде рекурсивных типов.
         \end{block}
+
+        \pause
+        \note<2>{
+            \begin{enumerate}
+                \item Для объектно-ориентированных языков ситуация сложнее
+                \item Так как наследник с Self-типом не всегда является подтипом
+                \item Из-за этого многие реализации небезопасны
+                \item В Swift реализация безопасна, но существенно ограничена
+            \end{enumerate}
+        }
 
         \begin{block}{ООП языки, поддерживющие Self-типы}
             В системе с Self-типами наследник не всегда является подтипом~[\href{https://dl.acm.org/doi/pdf/10.1145/96709.96721}{Cook et al, 1989}].
@@ -327,9 +352,19 @@
             \end{itemize}
         \end{block}
 
+        \pause
+        \note<3>{
+            \begin{enumerate}
+                \item Существует современная работа, вводящая Self-типы в Java
+                \item ....
+                \item В дальнейшей работе я адаптирую проверенные безопасные решения к специфике языка Kotlin
+                \item Для этого я определил во-первых правила подтипизации для Self-типа
+            \end{enumerate}
+        }
+
         \begin{block}{Формализм CoreThisJava \href{https://dl.acm.org/doi/pdf/10.1145/2888392}{[ThisType for Object-Oriented Languages, Rye et al, 2016]}}
             \begin{itemize}
-                \item Упор на поддержку Self-типов в контравариантной позиции через пересмотр подтипизации и разделение точных и экзистенциальных типов записей
+                \item Пересмотрена подтипизация для поддержки Self-типов в контравариантной позиции
                 \item Введены виртуальные конструкторы для создания новых значений Self-типа
                 \item Формально доказана безопасность приведённой системы типов
             \end{itemize}
@@ -368,13 +403,14 @@
         \end{block}
     \end{frame}
 
-    \begin{frame}[fragile]{Новые значения Self-типа}
-        \note<1->{
-            4:00 - 4:30
-            \\\\
-            Для многих важных приложений, например, персистентных коллекций, необходимо уметь создавать новые объекты Self-типа.
-            \\\\
-            ....
+    \begin{frame}[fragile]{Создание новых объектов Self-типа}
+        \note<1->{4:00 - 4:30}
+
+        \note<1>{
+            \begin{enumerate}
+                \item Для многих важных приложений, например, персистентных коллекций, необходимо уметь создавать новые объекты Self-типа
+                \item Для этого необходимо, чтобы тип создаваемого объекта всегда был подтипом типа ресивера
+            \end{enumerate}
         }
 
         Новый объект \mintinline{kotlin}|C(..)| имеет Self-тип $\iff$ \mintinline{kotlin}|C::class isSubtypeOf this.getClass()|\footnote{Условие должно выполняться всегда и быть проверяемо статически в месте создания объекта.}.
@@ -404,18 +440,13 @@
     \end{frame}
 
     \begin{frame}{Позиции Self-типа}
-        \note<1->{
-            4:30 - 5:00
-            \\\\
-            Важнейшую роль в безопасности Self-типов выбор допустимых позиций.
-            \\\\
-            ....
-            \\\\
-            Поэтому было решено ограничить использование Self-типов на ковариантные позиции.
-            \\\\
-            В каждой из них, Self-тип при вызове метода переписывается в тип ресивера, это называется материализацией.
-            \\\\
-            Таким образом, были описаны правила типизации для Self-типов и далее я реализовал их в компиляторе Kotlin.
+        \note<1->{4:30 - 5:00}
+
+        \note<1>{
+            \begin{enumerate}
+                \item Важнейшую роль в безопасности Self-типов выбор допустимых позиций
+                \item ....
+            \end{enumerate}
         }
 
         \begin{block}{Существующие решения}
@@ -438,13 +469,16 @@
         \end{block}
 
         \pause
+        \note<2>{
+            \begin{enumerate}
+                \item Поэтому было решено ограничить использование Self-типов на ковариантные позиции
+                \item Таким образом, были описаны правила типизации для Self-типов
+                \item Далее с их помощью, я реализовал поддержку Self-типов к компиляторе Kotlin
+            \end{enumerate}
+        }
 
         \begin{block}{Правило позиций Self-типа для Kotlin}
             Разрешается использовать Self-тип только в ковариантных позициях.
-        \end{block}
-
-        \begin{block}{Правило материализации}
-            Self-тип вызываемого метода всегда переписывается в тип ресивера.
         \end{block}
     \end{frame}
 
@@ -456,20 +490,16 @@
 
         \begin{enumerate}
             \item Идентификатор \texttt{Self} введён как ключевое слово языка
-            \item Введён новый вид (kind) типов --- Self-типы
+            \item Введён новый вид типов --- Self-типы
             \item Правила системы типов Kotlin дополнены для работы с Self-типами:
             \begin{itemize}
                 \item Правило подтипизации
                 \item Правило определения непосредственных супертипов
                 \item Правило вычисления ближайших общих супертипов
             \end{itemize}
-            \item Реализован скоуп, материализующий Self-тип в тип ресивера
+            \item Реализован типовой скоуп\footnote{\textbf{Типовой скоуп} --- сервис компилятора, возвращающий множество функций, для которых объект данного типа может быть использован как ресивер: $(plus : String\ldotp(String) \to String) \in scope(String)$.}, подставляющий тип ресивера вместо Self-типа
             \item Реализовано преобразование, подменяющее Self-тип на его границу и метаинформацию, при переходе к промежуточному представлению бекенда компилятора (IR)
         \end{enumerate}
-
-        \begin{block}{Типовой скоуп}
-            Множество функций, для которых объект данного типа может быть использован как ресивер: $(plus : String\ldotp(String) \to String) \in scope(String)$.
-        \end{block}
     \end{frame}
 
 
@@ -503,7 +533,7 @@
         \begin{enumerate}
             \item Проанализированы существующие реализации Self-типов в других языках на предмет мер по обеспечению безопасности системы с Self-типами
             \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin путём доопределения правил типизации с опорой на существующие решения
-            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа материализации Self-типов
+            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа подстановки Self-типов
             \item Полученная реализация протестирована на предмет допуска кода валидных сценариев использования и отвержения небезопасного кода
         \end{enumerate}
     \end{frame}
@@ -567,17 +597,17 @@
         Также Self-типы помогают строить рекурсивные структуры данных из вершин одного типа:
         \begin{minted}[escapeinside=??]{kotlin}
             // исходящая контравариантная позиция
-            abstract class Node<out T>(val value: T, val children: List<?\framebox{Self}?>) ?\pause?
+            abstract class Node<out T>(val value: T, val children: List<?\framebox{Self}?>)
             class BetterNode<out T>(value: T, children: List<?\framebox{Self}?> = emptyList()) :
                 Node<T>(value, children) {
                 fun betterSpecific() = println(value)
             }
-            ?\pause?
+
             fun test() {
                 val betterTree = BetterNode(value = 2, children =
                     listOf<?\framebox{BetterNode<Int>}?>(
                         BetterNode(1, listOf(BetterNode(0))),
-                        BetterNode(4, listOf(BetterNode(3), BetterNode(5))))) ?\pause?
+                        BetterNode(4, listOf(BetterNode(3), BetterNode(5)))))
                 betterTree.children
                     .flatMap { it.children }
                     .forEach { it.betterSpecific() } // Печатает "0 3 5"
@@ -589,15 +619,15 @@
         Пусть требуется по элементу типизируемым образом получить породившую его фабрику.
 
         \begin{minted}[escapeinside=??]{kotlin}
-            abstract class Element<out F : Factory>(val factory: F) ?\pause?
+            abstract class Element<out F : Factory>(val factory: F)
 
             interface Factory {
                 fun create(): Element<?\framebox{Self}?> // ковариантная исходящая позиция
-            } ?\pause?
+            }
 
             abstract class SpecificFactory : Factory {
                 abstract fun doSpecific()
-            } ?\pause?
+            }
 
             fun <F : SpecificFactory> test(element: Element<F>) {
                 entity.factory.doSpecific()
@@ -619,7 +649,7 @@
                             observer: (?\framebox{Self}?) -> Unit
                         ) {
                             observers += observer
-                        } ?\pause?
+                        }
                         private fun notifyObservers() {
                             observers.forEach { observer ->
                                 observer(?\framebox{this}?)
@@ -628,7 +658,7 @@
                     }
                 \end{minted}
             \end{column}
-            \pause
+
             \begin{column}{0.49\textwidth}
                 \vspace{-0.5em}
                 \begin{minted}[escapeinside=??]{kotlin}
@@ -638,7 +668,7 @@
                                 field = new
                                 notifyObservers()
                             }
-                    } ?\pause?
+                    }
 
                     fun observer(entity: ?\framebox{Entity}?) {
                         println("New: ${it.color}")
@@ -734,16 +764,16 @@
 
     \begin{frame}{Swift}
         \begin{itemize}
-            \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции \pause
-            \item Для методов классов Self-тип доступен только для исходящей позиции \pause
-            \item Если декларация метода протокола\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} содержит \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции: \pause
+            \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции
+            \item Для методов классов Self-тип доступен только для исходящей позиции
+            \item Если декларация метода протокола\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} содержит \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции:
             \begin{itemize}
                 \item Запрещено вызывать такие методы виртуально на \mintinline{swift}|any Protocol|
                 \item Можно вызывать, если протокол является ограничением типового параметра или при мономорфизации на \mintinline{swift}|some Protocol|
                 \item Реализующий класс обязан заменить такие вхождения Self-типа на себя
                 \item Ситуация становится аналогична языкам без наследования
-            \end{itemize} \pause
-            \item Ассоциированные типы так же позволяют эмулировать Self-типы, но на один уровень иерархии и с дополнительными приведениями типа \pause
+            \end{itemize}
+            \item Ассоциированные типы так же позволяют эмулировать Self-типы, но на один уровень иерархии и с дополнительными приведениями типа
             \item Self-типы в расширениях ссылаются на расширяемый тип
         \end{itemize}
     \end{frame}
@@ -905,7 +935,7 @@
         \begin{columns}[onlytextwidth]
             \begin{column}{0.99\textwidth}
                 Если позволить типизировать как Self отличный от ресивера объект (не \mintinline{kotlin}|this|), дальнейшая материализация Self-типа может приводить к небезопасности системы типов:
-                \pause
+
                 \begin{minted}[escapeinside=??]{kotlin}
                     abstract class A {
                         fun unsafeObj(a: A): Self = ?\textcolor{red}{a}?
@@ -913,7 +943,7 @@
 
                     class B : A() {
                         fun bOnly() {}
-                    } ?\pause?
+                    }
 
                     fun test(a: A, b: B) {
                         b.unsageObj(a) /* скоуп типа B */ .bOnly() // ?\err?, нет bOnly в A
@@ -973,7 +1003,6 @@
                 \end{block}
             \end{column}\hfill%
             \begin{column}[t]{0.50\textwidth}
-                \pause
                 \begin{minted}[escapeinside=??]{kotlin}
                     sealed interface Data {
                         data class One(var a: Int) : Data
