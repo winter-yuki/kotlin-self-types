@@ -1,314 +1,155 @@
 \section{Анализ существующих реализаций Self-типов} \label{sec:impls}
 
-%\begin{minted}[escapeinside=??]{kotlin}
-%interface Base {
-%    fun base(): ?\framebox{Self}? = ?\framebox{this}?
-%}
-%
-%class Defived : Base {
-%    fun derived() { /* ... */ }
-%}
-%
-%fun test(d: Derived) = d.base() /* : ?\framebox{Derived}? */ .derived()
-%\end{minted}
+Self-типы привлекают много внимания со стороны исследователей объектно ориентированного программирования, так как возникающее несоответствие наследования и подтипизации является вызовом для любого формализма~\cite{cook1989inheritance}.
+Также, как было показано в разделе~\ref{subsec:applications}, Self-типы имеют множество полезных приложений.
+Поэтому не удивительно, что Self-типы уже присутствуют во многих промышленных языках программирования.
 
-%\begin{definition}
-%    \label{def:materialization}
-%    \term{Материализация Self-типа} --- подмена Self-типа в сигнатуре метода на тип ресивера в скоупе типа этого ресивера.
-%\end{definition}
-%
-%Так для примера выше \texttt{Self} материализуется в \texttt{Derived} в его скоупе: \\
-%$(base: Base.() -> ?\framebox{Derived}?) \in scope(Derived)$
-%
-%\begin{definition}
-%    \label{def:bound}
-%    \term{Bound Self-типа} --- наиболее общий тип, в который Self-тип может быть материализован.
-%\end{definition}
-%
-%Bound Self-типа совпадает с типом ресивера текущей декларации.
-%В примере выше для \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| bound'ом является \mintinline{kotlin}|Base| (обозначение \underline{\mintinline{kotlin}|Self(Base)|}).
-%
-%В данной главе будет дано описание интеграции Self-типов в типовую систему языка Kotlin.
-%Ключевой задачей является сохранение безопасности системы типов (опр.~\ref{def:sound}) вместе с поддержкой наибольшего количества полезных применений Self-типов, описанных ранее в~\ref{subsec:applications}.
-%
-%%Для этого мы рассмотрим, какие значения могут иметь Self-тип вместе с правилами подтипизации и в каких позициях Self-тип безопасно использовать.
-%
-%TODO % TODO
-%
-%%Далее будем пользоваться следующими вспомогательными определениями.
-%%
-%%\begin{minted}{kotlin}
-%%    fun interface In<in T> {
-%%        fun accept(x: T)
-%%    }
-%%
-%%    fun interface Out<out T> {
-%%        fun produce(): T
-%%    }
-%%
-%%    fun interface Inv<T> {
-%%        fun id(x: T): T
-%%    }
-%%\end{minted}
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%\subsection{Значения Self-типа}
-%
-%TODO % TODO
-%
-%\subsubsection{Небезопасные присваивания}
-%
-%TODO % TODO
-%
-%\subsubsection{Создание новых объектов Self-типа}
-%
-%TODO % TODO
-%
-%\subsection{Позиции Self-типа}
-%
-%TODO % TODO
-%
-%\subsubsection{Простая исходящая позиция}
-%
-%TODO % TODO
-%
-%\subsubsection{Простая входная позиция}
-%
-%TODO % TODO
-%
-%\subsubsection{Параметрическая исходящая позиция}
-%
-%TODO % TODO
-%
-%\subsubsection{Параметрическая входная позиция}
-%
-%TODO % TODO
-%
-%\subsubsection{Параметр наследуемого класса}
-%
-%TODO % TODO
-%
-%\subsubsection{Функции-расширения}
-%
-%TODO % TODO
-%
-%\subsection{Вызовы функций с Self-типами}
-%
-%TODO % TODO
-%
-%\subsection{Взаимодействие с Java}
-%
-%TODO % TODO
+В этой главе мы рассмотрим различные существующие подходы к реализации Self-типов в объектно ориентированных языках, чтобы выбрать для Kotlin наиболее удачные и, вместе с тем, безопасные решения.
+Нас будут в первую очередь интересовать возможные значения Self-типа, позиции, в которых тот или иной язык позволяет использовать Self-типы, а так же на меры, предпринимаемые для сохранения безопасности системы типов (опр.~\ref{def:sound}).
 
 
-%\section{Анализ существующих реализаций Self-типов}
-%
-%Как было показано выше, Self-типы с одной стороны имеют множество приложений, с другой~--- эмулируются в коде нетривиальным образом.
-%Поэтому не удивительно, что во многих языках Self-типы уже реализованы.
-%
-%Основной задачей, решаемой в следующей главе (\ref{sec:integration}), является максимизация возможностей, предоставляемых Self-типами, при сохранении безопасности системы типов (опр.~\ref{def:sound}) языка Kotlin.
-%Поэтому мы рассмотрим несколько объектно-ориентированных языков с Self-типами и будем в первую очередь обращать внимание на значения Self-типа, позиции, в которых тот или иной язык позволяет использовать Self-типы, а так же на меры, предпринимаемые для сохранения безопасности системы типов.
-%
-%
-%\subsection{Формальные решения для рекурсивных типов} \label{subsec:formal-solutions}
-%
-%Ранее в разделе~\ref{subsec:formalizaton} мы рассмотрели формализацию Self-типов как рекурсивных типов.
-%Исследователи предлагают множество способов их включения в языки с сохранением безопасности~\cite{bruce1997increasing, burstein1998rupiah, cook1989inheritance, ryu2016thistype, saito2009matching}.
-%
-%
-%
-%TODO % TODO
-%
-%
-%\subsection{TypeScript}
-%
-%В языке TypeScript~\cite{bierman2014understanding} Self-типы присутствуют под названием <<this-типы>>\footnote{\url{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}}.
-%Они действуют так же, как было рассмотрено выше --- this-тип материализуется в конкретный тип ресивера при вызове метода.
-%
-%Однако разработчики TypeScript не ставят задачи поддержки безопасности системы типов языка и this-типы можно использовать в произвольной позиции.
-%Поэтому нетрудно написать код, например, с this-типом в контравариантной позиции, который проходит проверку типов, но при этом получающий без явных приведений типов значение \mintinline{typescript}|undefined|.
-%
-%\begin{minted}{typescript}
-%    class Box {
-%      content: string = "";
-%      sameAs(other: this): boolean {
-%        return other.content === this.content;
-%      }
-%    }
-%
-%    class DerivedBox extends Box {
-%      otherContent: string = "?";
-%      sameAs(other: this): boolean {
-%        if (other.otherContent === undefined) {
-%          console.log("Система типов TS небезопасна")
-%        }
-%        return other.otherContent === this.otherContent;
-%      }
-%    }
-%
-%    const base = new Box();
-%    const derived = new DerivedBox();
-%
-%    function test(x: Box): boolean {
-%      return x.sameAs(base)
-%    }
-%
-%    test(derived) // Печатает: "Система типов TS небезопасна"
-%\end{minted}
-%
-%Единственное значение в TypeScript, которое типизируется this-типом~--- это сам \mintinline{typescript}|this|.
-%
-%
-%\subsection{Python}
-%
-%Python~\cite{sanner1999python} --- изначально динамически типизированный язык программирования, в который последовательно добавляются возможности статической типизации.
-%В том числе в версию языка 3.11 были введены Self-типы\footnote{\url{https://peps.python.org/pep-0673/}\label{foot:self-pep}}.
-%
-%Также авторы дизайн-предложения Self-типов для Python приводят\footref{foot:self-pep} интересную статистику, согласно которой паттерн типового параметра с рекурсивным ограничением (отчасти заменяемый Self-типами, как мы увидели выше в разделе~\ref{subsubsec:recursive-generics}) встречается в количестве 40\% случаев от использования других популярных типов~--- \mintinline{Python}|dict| и \mintinline{Python}|Callable|.
-%
-%Стратегия реализации Self-типов в Python заключается в превращении их обратно в \mintinline{Python}|TypeVar| с рекурсивным ограничением\footref{foot:self-pep}.
-%
-%Аналогично TypeScript Self-типы в Python небезопасны.
-%
-%
-%\subsection{Java Manifold}
-%
-%Плагин Manifold к компилятору Java позволяет\footnote{\url{https://github.com/manifold-systems/manifold/tree/master/manifold-deps-parent/manifold-ext\#the-self-type-with-self}} проаннотировать тип аннотацией \mintinline{Java}|@Self|.
-%Проаннотированный тип играет роль bound'а (опр.~\ref{def:bound}) Self-типа.
-%
-%В простой исходящей позиции аннотация \mintinline{Java}|@Self| позволяет обойтись без abstract override методов (см.~\ref{subsubsec:abstract-override}) и дополнительных приведений типов.
-%
-%\begin{minted}{java}
-%    class VehicleBuilder {
-%        /* ... */
-%        public @Self VehicleBuilder withWheels(int wheels) {
-%            _wheels = wheels;
-%            return this;
-%        }
-%    }
-%
-%    class AirplaneBuilder extends VehicleBuilder {
-%        /* ... */
-%    }
-%
-%     Airplane airplane = new AirplaneBuilder()
-%        .withWheels(2) // Возвращает AirplaneBuilder
-%        .withWings(1)
-%\end{minted}
-%
-%Во входящей позиции тоже можно использовать аннотацию \mintinline{Java}|@Self|.
-%Это позволяет ввести некоторые дополнительные типовые ограничения.
-%
-%\begin{minted}{java}
-%    class A {
-%        public boolean equals(@Self Object obj) {
-%            /* ... */
-%        }
-%    }
-%
-%    A a = new A();
-%    a.equals("строчка вместо объекта типа A"); // Ошибка компиляции
-%\end{minted}
-%
-%Однако эти ограничения легко обойти.
-%Так, следующий код уже не отвергается системой типов.
-%Поэтому классическая проверка \mintinline{java}|isinstance| в методе \texttt{equals} всё ещё необходима.
-%
-%\begin{minted}{java}
-%    Object obj = a;
-%    obj.equals("строчка вместо объекта типа A");
-%\end{minted}
-%
-%\mintinline{Java}|@Self| можно безопасно использовать и в исходящей ковариантной позиции, например, для реализации рекурсивной структуры данных.
-%Однако для входящей позиции всё ещё требуется проверка времени исполнения.
-%
-%\begin{minted}{java}
-%    public class Node {
-%        private List<Node> children;
-%
-%        public List<@Self Node> getChildren() {
-%            return children;
-%        }
-%
-%        public void addChild(@Self Node child) {
-%            checkAssignable(this, child); // Необходима проверка
-%            children.add(child);
-%        }
-%    }
-%
-%    public class MyNode extends Node {
-%        /* ... */
-%    }
-%
-%    MyNode myNode = findMyNode();
-%    List<MyNode> = myNode.getChildren();
-%\end{minted}
-%
-%Manifold предоставляет возможность писать функции-расширения в Java, и в связи с этим, \mintinline{Java}|@Self| может ссылаться на тип ресивера функции-расширения.
-%
-%\begin{minted}{java}
-%    public static <K,V> @Self Map<K,V> add(
-%            @This Map<K,V> thiz, K key, V value) {
-%        thiz.put(key, value);
-%        return thiz;
-%    }
-%
-%    HashMap<String, String> map = new HashMap<>()
-%        .add("nick", "grouper")
-%        .add("miles", "amberjack");
-%\end{minted}
-%
-%
-%\subsection{Swift}
-%
-%Язык Swift имеет
-%
-%TODO % TODO
-%
-%
-%\subsection{Java Core}
-%
-%methods precisely because their type systems
-%do not support explicit recursive types, which lead to a mismatch between subclassing and subtyping. This
-%mismatch means that an expression of a subclass may not always be usable in a context where an expression
-%of a superclass is expected, which is not intuitive in an object-oriented setting.
-%
-%even in the presence of negative occurrences of type
-%recursion variables by distinguishing object types from existential object types.
-%
-%recursive types break a valuable property subtyping-by-
-%subclassing (or subtyping-by-inheritance) of object-oriented languages
-%William R. Cook, Walter Hill, and Peter S. Canning. 1990. Inheritance is not subtyping. In Proceedings of
-%
-%less precise “declared inexact types” rather than precise “runtime
-%exact types”?
-%
-%TODO % TODO
-%
-%\cite{ryu2016thistype}
+\subsection{Формальные подходы}
 
+TODO % TODO
+
+
+\subsection{TypeScript}
+
+В языке TypeScript~\cite{bierman2014understanding} Self-типы присутствуют под названием <<this-типы>>\footnote{\url{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}}.
+У таких типов единственных обитатель~--- \mintinline{typescript}|this|.
+
+Разработчики TypeScript не ставят задачи поддержки безопасности системы типов языка и this-типы можно использовать в произвольной позиции.
+Поэтому нетрудно написать код, например, с this-типом в контравариантной позиции, который проходит проверку типов, но при этом получающий без явных приведений типов значение \mintinline{typescript}|undefined|.
+
+\begin{minted}{typescript}
+    class Box {
+      content: string = "";
+      sameAs(other: this): boolean {
+        return other.content === this.content;
+      }
+    }
+
+    class DerivedBox extends Box {
+      otherContent: string = "?";
+      sameAs(other: this): boolean {
+        if (other.otherContent === undefined) {
+          console.log("Система типов TS небезопасна")
+        }
+        return other.otherContent === this.otherContent;
+      }
+    }
+
+    const base = new Box();
+    const derived = new DerivedBox();
+
+    function test(x: Box): boolean {
+      return x.sameAs(base)
+    }
+
+    test(derived) // Печатает: "Система типов TS небезопасна"
+\end{minted}
+
+
+\subsection{Python}
+
+Python~\cite{sanner1999python} --- изначально динамически типизированный язык программирования, в который последовательно добавляются возможности статической типизации.
+В том числе в версию языка 3.11 были введены Self-типы\footnote{\url{https://peps.python.org/pep-0673/}\label{foot:self-pep}}.
+
+Также авторы дизайн-предложения Self-типов для Python приводят\footref{foot:self-pep} интересную статистику, согласно которой паттерн типового параметра с рекурсивным ограничением (отчасти заменяемый Self-типами, как мы увидели выше в разделе~\ref{subsubsec:recursive-generics}) встречается в количестве 40\% случаев от использования других популярных типов~--- \mintinline{Python}|dict| и \mintinline{Python}|Callable|.
+
+Стратегия реализации Self-типов в Python заключается в превращении их обратно в \mintinline{Python}|TypeVar| с рекурсивным ограничением\footref{foot:self-pep}.
+
+Дизайн Self-типов в Python сходен с дизайном в TypeScript.
+Только значение \mintinline{python}|self| населяет Self-тип, его можно использовать в произвольной позиции без гарантий безопасности со стороны системы типов.
+
+
+\subsection{Java Manifold}
+
+Плагин Manifold к компилятору Java позволяет\footnote{\url{https://github.com/manifold-systems/manifold/tree/master/manifold-deps-parent/manifold-ext\#the-self-type-with-self}} проаннотировать тип аннотацией \mintinline{Java}|@Self|.
+
+В простой исходящей позиции аннотация \mintinline{Java}|@Self| позволяет обойтись без abstract override методов (см.~\ref{subsubsec:abstract-override}) и дополнительных приведений типов:
+
+\begin{minted}{java}
+    class VehicleBuilder {
+        /* ... */
+        public @Self VehicleBuilder withWheels(int wheels) {
+            _wheels = wheels;
+            return this;
+        }
+    }
+
+    class AirplaneBuilder extends VehicleBuilder {
+        /* ... */
+    }
+
+     Airplane airplane = new AirplaneBuilder()
+        .withWheels(2) // Возвращает AirplaneBuilder
+        .withWings(1)
+\end{minted}
+
+Во входящей позиции тоже можно использовать аннотацию \mintinline{Java}|@Self|.
+Это позволяет иметь некоторые дополнительные типовые ограничения:
+
+\begin{minted}{java}
+    class A {
+        public boolean equals(@Self Object obj) {
+            /* ... */
+        }
+    }
+
+    A a = new A();
+    a.equals("строчка вместо объекта типа A"); // Ошибка компиляции
+\end{minted}
+
+Однако эти ограничения легко обойти.
+Так, следующий код уже не отвергается системой типов.
+Поэтому классическая проверка \mintinline{java}|isinstance| в методе \texttt{equals} всё ещё необходима.
+
+\begin{minted}{java}
+    Object obj = a;
+    obj.equals("строчка вместо объекта типа A");
+\end{minted}
+
+\mintinline{Java}|@Self| можно безопасно использовать и в исходящей ковариантной позиции, например, для реализации рекурсивной структуры данных.
+Однако для входящей позиции всё ещё требуется проверка времени исполнения.
+
+\begin{minted}{java}
+    public class Node {
+        private List<Node> children;
+
+        public List<@Self Node> getChildren() {
+            return children;
+        }
+
+        public void addChild(@Self Node child) {
+            checkAssignable(this, child); // Необходима проверка
+            children.add(child);
+        }
+    }
+
+    public class MyNode extends Node {
+        /* ... */
+    }
+
+    MyNode myNode = findMyNode();
+    List<MyNode> = myNode.getChildren();
+\end{minted}
+
+Manifold предоставляет возможность писать функции-расширения в Java, и в связи с этим, \mintinline{Java}|@Self| может ссылаться на тип ресивера функции-расширения.
+
+\begin{minted}{java}
+    public static <K,V> @Self Map<K,V> add(
+            @This Map<K,V> thiz, K key, V value) {
+        thiz.put(key, value);
+        return thiz;
+    }
+
+    HashMap<String, String> map = new HashMap<>()
+        .add("nick", "grouper")
+        .add("miles", "amberjack");
+\end{minted}
+
+
+\subsection{Swift}
+
+TODO % TODO
