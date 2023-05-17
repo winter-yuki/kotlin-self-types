@@ -4,8 +4,8 @@
 % Vertical allignment: https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
 %\documentclass[handout,aspectratio=43]{beamer}
 %\documentclass[aspectratio=43]{beamer}
-\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
-%\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
+%\documentclass[handout,aspectratio=169,usenames,dvipsnames]{beamer}
+\documentclass[aspectratio=169,usenames,dvipsnames]{beamer}
 
 % https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
 \usepackage{moresize}
@@ -133,7 +133,7 @@
 % https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
 % https://tex.stackexchange.com/questions/35444/split-beamer-notes-across-multiple-notes-pages/35496#35496
 %--------------------------------------
-%\setbeameroption{show notes on second screen=right} % enable speaker notes
+\setbeameroption{show notes on second screen=right} % enable speaker notes
 %--------------------------------------
 
 \author[Андрей Стоян]{Стоян Андрей Сергеевич \\ {\footnotesize научный руководитель: к.~ф.-м.~н.} Москвин Денис Николаевич \\ {\footnotesize научный консультант:} Новожилов Дмитрий Павлович}
@@ -143,6 +143,9 @@
 \date{Санкт-Петербург 2023г.}
 
 \begin{document}
+    
+    \setcounter{framenumber}{-1}
+    \addtocounter{totalframenumber}{-1}
 
     \maketitle
 
