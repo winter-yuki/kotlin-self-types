@@ -1,3 +1,92 @@
 \section{Интеграция Self-типов в типовую систему языка Kotlin} \label{sec:integration}
 
-TODO % TODO
+Ранее в главе~\ref{sec:theory} были рассмотрены соображения, указывающие на потенциальную небезопасность неаккуратной реализации Self-типов.
+Далее в главе~\ref{sec:impls} были приведены различные существующие решения по безопасному внедрению Self-типов в языки.
+И теперь мы готовы к тому, чтобы интегрировать Self-типы в Kotlin, учитывая его специфику, и с использованием безопасных практик.
+
+Так, сначала мы рассмотрим различные аспекты интеграции Self-типов в Kotlin.
+Ключевой задачей является сохранение безопасности системы типов (опр.~\ref{def:sound}) вместе с поддержкой наибольшего количества полезных приложений Self-типов, описанных ранее в~\ref{subsec:applications}.
+Поэтому далее приведём соответствие между построенными правилами и верифицированным формализмом, чтобы убедиться в сохранении безопасности обновлённой системы типов.
+И наконец, обсудим реализацию прототипа Self-типов в компиляторе kotlinc.
+
+
+\subsection{Основные понятия}
+
+Рассмотрим основные понятия, которые будем использовать в рассуждениях о Self-типах в Kotlin.
+
+\begin{definition}
+    \label{def:bound}
+    Границей Self-типа назовём наиболее общий тип ресивера, на котором может быть вызван соответствующий метод.
+\end{definition}
+
+\begin{minted}{kotlin}
+    interface Base {
+        fun base(): #\framebox{Self}# = #\framebox{this}#
+    }
+
+    class Defived : Base {
+        fun derived() { /* ... */ }
+    }
+
+    fun test(d: Derived) = d.base() /* : Derived */ .derived()
+\end{minted}
+
+Граница Self-типа совпадает с типом ресивера текущей декларации метода.
+В примере выше для \mintinline[escapeinside=??]{kotlin}|?\framebox{Self}?| bound'ом является \mintinline{kotlin}|Base| (обозначение \mintinline{kotlin}|Self(Base)|).
+
+\begin{definition}
+    \label{def:materialization}
+    \term{Материализация Self-типа} --- подмена Self-типа в сигнатуре метода на тип ресивера в скоупе типа этого ресивера.
+\end{definition}
+
+Так для примера выше \texttt{Self} материализуется в \texttt{Derived} в его скоупе: \\
+$(base: Base.() -> \framebox{Derived}) \in scope(Derived)$.
+
+Скоупы Self-типа и его границы совпадают % TODO
+
+
+\subsection{Синтаксис Self-типов}
+
+% TODO
+
+
+\subsection{Правила Self-типов}
+
+% TODO
+
+\subsubsection{Подтипизация}
+
+% TODO
+
+\subsubsection{Ближайшие супертипы}
+
+% TODO
+
+\subsubsection{Определение ближайшего супертипа}
+
+% TODO
+
+
+\subsection{Создание новых объектов Self-типа}
+
+% TODO
+
+
+\subsection{Позиции Self-типа}
+
+% TODO
+
+
+\subsection{Материализация Self-типа}
+
+% TODO
+
+
+\subsection{Соответствие формальным решениям}
+
+% TODO
+
+
+\subsection{Реализация прототипа Self-типов в компиляторе kotlinc}
+
+% TODO
