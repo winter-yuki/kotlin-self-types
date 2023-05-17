@@ -308,7 +308,7 @@
             \begin{enumerate}
                 \item Проанализировать существующие решения
                 \item Интегрировать Self-типы в типовую систему языка Kotlin
-                \item Реализовать поддержку Self-типов в компиляторе kotlinc (K2)
+                \item Реализовать поддержку Self-типов в компиляторе kotlinc
                 \item Протестировать полученную реализацию
             \end{enumerate}
         \end{block}
@@ -483,7 +483,7 @@
     \end{frame}
 
 
-    \subsection{Реализация Self-типов в компиляторе kotlinc (K2)}
+    \subsection{Реализация Self-типов в компиляторе kotlinc}
 
     \begin{frame}{Реализация Self-типов в компилиторе Kotlin}
         \note<1->{5:00 - 5:30}
@@ -533,7 +533,7 @@
         \begin{enumerate}
             \item Проанализированы существующие реализации Self-типов в других языках на предмет мер по обеспечению безопасности системы с Self-типами
             \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin путём доопределения правил типизации с опорой на существующие решения
-            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе K2 за счет добавления специального вида типов и скоупа подстановки Self-типов
+            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе kotlinc за счет добавления специального вида типов и скоупа подстановки Self-типов
             \item Полученная реализация протестирована на предмет допуска кода валидных сценариев использования и отвержения небезопасного кода
         \end{enumerate}
     \end{frame}
