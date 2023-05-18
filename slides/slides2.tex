@@ -1,0 +1,49 @@
+% * Make friends tikz & colors
+%   https://en.wikibooks.org/wiki/LaTeX/Colors
+% * To enable vertical top alignment globally
+%   https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
+\documentclass[usenames,dvipsnames]{beamer}
+% ------------------------------------------------
+
+% Graphics
+\usepackage{tabularx}
+\usepackage{tikz}
+% ------------------------------------------------
+
+% Math
+\usepackage{indentfirst,verbatim}
+\usepackage{listings,amsmath,amsfonts,amssymb,multicol}
+% Crossed-out symbols
+% https://tex.stackexchange.com/questions/75525/how-to-write-crossed-out-math-in-latex
+\usepackage[makeroom]{cancel}
+
+% Additional font sizes
+% https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
+\usepackage{moresize}
+% Additional corous
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+\usepackage{xcolor}
+% ------------------------------------------------
+
+% Language
+\usepackage[utf8] {inputenc}
+\usepackage[T2A] {fontenc}
+\usepackage[english,russian] {babel}
+\usetikzlibrary{cd, babel}
+% ------------------------------------------------
+
+% Template
+\usetheme{CambridgeUS}
+\usecolortheme{dolphin}
+% https://tex.stackexchange.com/questions/231439/beamer-how-to-make-font-larger-for-page-numbers
+\setbeamerfont{headline}{size=\normalsize}
+\setbeamerfont{footline}{size=\normalsize}
+% Slide sizes
+% https://tex.stackexchange.com/questions/56768/how-to-set-a-small-default-font-size-with-beamer
+%\geometry{paperwidth=140mm,paperheight=105mm} % 4:3
+\geometry{paperwidth=168mm,paperheight=105mm} % 16:10
+% ------------------------------------------------
+
+\begin{document}
+    kek
+\end{document}
