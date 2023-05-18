@@ -21,14 +21,15 @@
 \term{Тип терма записи имеет вид} \[\{x_1 : \sigma_1,\ldots,x_n : \sigma_n\}\] где $x_i$~--- идентификаторы полей, а $\sigma_i$~--- типы значений полей.
 
 \term{Правило (структурной) подтипизации для типов записей} записывается следующим образом:
-\[
+\begin{equation}
+    \label{eq:record-subtype}
     %! suppress = EscapeAmpersand
     \infer{
         \{x_1 : \sigma_1, \ldots, x_k : \sigma_k, \ldots, x_n : \sigma_n\}
         <:
         \{x_1 : \tau_1, \ldots, x_k : \tau_n\}
     }{\sigma_1 <: \tau_1 & \ldots & \sigma_k <: \tau_k}
-\]
+\end{equation}
 
 В формальной модели мы будем оперировать структурной подтипизацией вместо номинативной, так как нас интересует внутренняя структура объектов и возможность использовать один объект вместо другого (см.
 ~опр.~\ref{def:subtype}).
@@ -71,10 +72,10 @@
 \end{equation}
 
 Так, чтобы получить смещённую точку относительно точки $p : P$ требуется применить правило Unfold:
-\begin{align*}
+\begin{align}
     &unfold~p : \{ x : int, move : int \to P, eq : P \to bool \} \\
-    &(unfold~p).move~42 : P
-\end{align*}
+    \label{eq:unfold-example} &(unfold~p).move~42 : P
+\end{align}
 
 Нетрудно видеть, что связанные в $\mu$-нотации типы --- это не что иное, как Self-типы.
 
