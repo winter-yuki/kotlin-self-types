@@ -605,8 +605,8 @@ It is needed to emphasize values that can be typed as `Self(C)`. They are:
   2.3 `C` is declared in the same module with a call-site.
 
 Subtyping rules are (self-type nullability handling is obvious):
-1. `B <: A <=> Self(B) <: Self(A)` to support override for methods with self-type in the return position;
-2. `B <: A <=> Self(B) <: A` to be able to assign value to its self-type bound (`val a: A = this`);
+1. `B <: A => Self(B) <: Self(A)` to support override for methods with self-type in the return position;
+2. `B <: A => Self(B) <: A` to be able to assign value to its self-type bound (`val a: A = this`);
 3. `Nothing <: Self(A)` and `Self(A) <: Any`;
 4. `B !<: Self(A)` if `B` does not fit rules (1) and (3).
 

@@ -312,7 +312,7 @@
 %% Настраиваем minted для подсветки кода
 \usepackage[cache=false, outputdir=out]{minted}
 \usepackage{listings}
-\setminted{xleftmargin=\parindent, linenos, autogobble, frame=lines, escapeinside=\#\#, mathescape}
+\setminted{xleftmargin=\parindent, linenos, autogobble, frame=lines, escapeinside=\#\#}
 \renewcommand{\theFancyVerbLine}{\arabic{FancyVerbLine}}
 \newmintinline[kt]{kotlin}{escapeinside=\#\#}
 \newmintinline[es]{text}{escapeinside=//}
