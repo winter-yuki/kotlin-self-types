@@ -571,7 +571,7 @@ fun A.f(x: Self, producer: Out<Self>, consumer: In<Self>): Self = null!!
 fun <T : A> T.f(x: T, producer: Out<T>, consumer: In<T>): T = null!!
 ```
 
-Origin can also be a generic type or an instantiated type ctor:
+Bound can also be a generic type or an instantiated type ctor:
 ```kotlin
 fun <T> T.f(x: T, y: Self): Pair<Self, Self> = x /* error: T !<: Self(T) */ to this
 fun <T> List<T>.shuffle(): Self = null!!
