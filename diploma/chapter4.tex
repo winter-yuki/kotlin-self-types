@@ -190,7 +190,7 @@ $B <: A \Rightarrow B <: A?, B? <: A?$.
 \end{enumerate}
 
 
-\subsection{Создание новых объектов Self-типа}
+\subsection{Создание новых объектов Self-типа} \label{subsec:new}
 
 Ранее мы подразумевали, что существует лишь одно значение Self-типа~--- \mintinline{kotlin}|this| (или \mintinline{swift}|self|, как его ещё называют).
 Однако для многих важных приложений, например персистентных коллекций, требуется уметь создавать новые объекты Self-типа.
@@ -259,27 +259,49 @@ $B <: A \Rightarrow B <: A?, B? <: A?$.
         class One(val a: Int) : Data
         class Two(val a: Int, val b: Int) : Data
 
-        fun update(a: Int): Self = when (this) {
-            is One -> ?\colorbox{green}{One(a)}?    // : Self(One)
-            is Two -> ?\colorbox{green}{Two(a, b)}? // : Self(Two)
-        } // : Self(Data) по CST
+        fun update(a: Int): Self =
+            when (this) {
+                is One -> ?\colorbox{green}{One(a)}?    // : Self(One)
+                is Two -> ?\colorbox{green}{Two(a, b)}? // : Self(Two)
+            } // : Self(Data) по CST
     }
 \end{minted}
 
 Последнее ограничение (\ref{itm:new-module}) предотвращает возникновение несовместимости исходных кодов при открытии класса.
 Это важно, так как до сих пор (до Kotlin версии 1.8.21) открытие класса не может нарушить обратной совместимости.
-Рассмотрим следующий пример, в нём при открытии класса \texttt{One} из примера выше делает код некомпилируемым, если \texttt{One} находится в другом модуле~--- это нарушение совместимости исходных кодов:
+Рассмотрим следующий пример, в нём при открытии класса \texttt{One} из примера выше делает код некомпилируемым, если декларация \texttt{One} находится в другом модуле~--- это нарушение совместимости исходных кодов:
 
 \begin{minted}{kotlin}
     operator fun Data.plus(d: Int): Self =
         when (this) {
-            is One -> #\colorbox{green}{One(a + d)}# // : Self пока One финальный
+            is One -> #\colorbox{green}{One(a + d)}# // : Self, пока One финальный
             is Two -> #\colorbox{green}{Two(a + d, b + d)}#
         }
 \end{minted}
 
 
 \subsection{Позиции Self-типа} \label{subsec:self-positions}
+
+Как мы поняли ранее (см.~\ref{subsec:rec-subtyping}), не во всех позициях безопасно использовать Self-типы.
+Так, в ковариантных позициях Self-типы можно использовать без опасений, языки с безопасными системами этого, как правило, всё равно не позволяют ввиду отсутствия поддержки вариантности, как, например, Swift (см.~\ref{subsec:swift}).
+В то же время Self-типы в контравариантных позициях мешают наследнику быть подтипом~\cite{cook1989inheritance}, и языки вынуждены предпринимать те или иные специальные меры.
+
+Однако если Self-тип относится не к dispatch ресиверу (опр.~\ref{def:dispatch-receivers}), а к extension ресиверу (опр~\ref{def:extension-receivers}), то проблемы наследования становятся не актуальны.
+Этот случай будет рассмотрен в~\ref{subsubsec:extension-position}.
+
+\subsubsection{Ковариантные позиции Self-типа}
+
+Поскольку Kotlin поддерживает вариантность (\ref{subsubsec:variance}), а так же существует немало приложений у Self-типов в ковариантных позициях (см.~\ref{subsec:applications}), то есть смысл позволить использовать Self-типы в этих позициях.
+
+\subsubsection{Контравариантные позиции Self-типа}
+
+Теперь рассмотрим контравариантные позиции, а именно самый простой случай~--- бинарные методы.
+Мы уже ранее приводили пример кода на TypeScript (см.~\ref{subsec:typescript}), который использовал this-тип в контравариантной позиции, что приводило к небезопасности системы типов (возникновению \mintinline{typescript}|undefined| в корректно типизированной программе).
+Рассмотрим различные подходы по обеспечению безопасности контравариантной позиции, приведённые в разделе~\ref{sec:impls}, применительно к Kotlin и оценим их применимость.
+
+TODO % TODO
+
+\subsubsection{Позиции Self-типа в функциях-расширениях} \label{subsubsec:extension-position}
 
 TODO % TODO
 
