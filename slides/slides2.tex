@@ -2,25 +2,30 @@
 %   https://en.wikibooks.org/wiki/LaTeX/Colors
 % * To enable vertical top alignment globally
 %   https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
-\documentclass[usenames,dvipsnames]{beamer}
+\documentclass[usenames, dvipsnames]{beamer}
 % ------------------------------------------------
 
 % Graphics
 \usepackage{tabularx}
 \usepackage{tikz}
+\usepackage{blkarray}
 % ------------------------------------------------
 
 % Math
-\usepackage{indentfirst,verbatim}
-\usepackage{listings,amsmath,amsfonts,amssymb,multicol}
+\usepackage{amsmath, amsfonts}
+\usepackage{amssymb}
+\usepackage{proof}
+\usepackage{mathrsfs}
 % Crossed-out symbols
 % https://tex.stackexchange.com/questions/75525/how-to-write-crossed-out-math-in-latex
 \usepackage[makeroom]{cancel}
+\usepackage{mathtools}
+% ------------------------------------------------
 
 % Additional font sizes
 % https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
 \usepackage{moresize}
-% Additional corous
+% Additional colors
 % https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
 \usepackage{xcolor}
 % ------------------------------------------------
@@ -28,22 +33,101 @@
 % Language
 \usepackage[utf8] {inputenc}
 \usepackage[T2A] {fontenc}
-\usepackage[english,russian] {babel}
+\usepackage[english, russian] {babel}
+\usepackage{indentfirst, verbatim}
 \usetikzlibrary{cd, babel}
+% ------------------------------------------------
+
+% Fonts
+\usepackage{stmaryrd}
+\usepackage{cmbright}
+\usepackage{wasysym}
+% ------------------------------------------------
+
+% Code
+% https://tex.stackexchange.com/questions/99475/how-to-invoke-latex-with-the-shell-escape-flag-in-texstudio-former-texmakerx
+\usepackage{minted}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#}
 % ------------------------------------------------
 
 % Template
 \usetheme{CambridgeUS}
 \usecolortheme{dolphin}
 % https://tex.stackexchange.com/questions/231439/beamer-how-to-make-font-larger-for-page-numbers
-\setbeamerfont{headline}{size=\normalsize}
-\setbeamerfont{footline}{size=\normalsize}
+\setbeamerfont{headline}{size=\scriptsize}
+\setbeamerfont{footline}{size=\scriptsize}
+% Remove heddline
+% https://tex.stackexchange.com/questions/33146/how-could-i-remove-a-header-in-a-beamer-presentation
+%\setbeamertemplate{headline}{}
 % Slide sizes
 % https://tex.stackexchange.com/questions/56768/how-to-set-a-small-default-font-size-with-beamer
 %\geometry{paperwidth=140mm,paperheight=105mm} % 4:3
 \geometry{paperwidth=168mm,paperheight=105mm} % 16:10
 % ------------------------------------------------
 
+% Bullets
+% https://9to5science.com/change-bullet-style-formatting-in-beamer
+% https://tex.stackexchange.com/questions/185742/i-need-to-change-color-of-beamer-itemize-and-subitem-separately
+\setbeamertemplate{itemize item}{\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subsubitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{enumerate item}{\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\insertenumlabel.\insertsubenumlabel}
+\setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
+% ------------------------------------------------
+
+% Diff
+\usepackage{multicol}
+\usepackage{hyperref}
+\usepackage{soul} % https://tex.stackexchange.com/questions/23711/strikethrough-text
+% ------------------------------------------------
+
+% Appendix
+% Slide numbers
+% https://tex.stackexchange.com/questions/70448/dont-count-backup-slides
+\usepackage{appendixnumberbeamer}
+\newcommand{\backupbegin}{
+    \newcounter{framenumbervorappendix}
+    \setcounter{framenumbervorappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+    \addtocounter{framenumbervorappendix}{-\value{framenumber}}
+    \addtocounter{framenumber}{\value{framenumbervorappendix}}
+}
+% ------------------------------------------------
+
+% Custom commands
+\newcommand{\err}[0]{\textcolor{red}{ошибка}}
+% ------------------------------------------------
+
+% Speaker notes
+% https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
+% https://tex.stackexchange.com/questions/35444/split-beamer-notes-across-multiple-notes-pages/35496#35496
+%\setbeameroption{show notes on second screen=right} % enable speaker notes
+%--------------------------------------
+
+\author[Андрей Стоян]{Стоян Андрей Сергеевич \\ {\footnotesize научный руководитель: к.~ф.-м.~н.} Москвин Денис Николаевич \\ {\footnotesize научный консультант:} Новожилов Дмитрий Павлович}
+\institute[ИТМО/SE]{Университет ИТМО\\Разработка программного обеспечения/Software engineering}
+
+\title[Self-типы для языка Kotlin]{Дизайн и разработка Self-типов для языка Kotlin}
+\date{Санкт-Петербург 2023г.}
+
 \begin{document}
-    kek
+    \setcounter{framenumber}{-1}
+
+    \maketitle
+
+    \begin{frame}{first}
+        kek
+    \end{frame}
+
+    \appendix
+
+    \begin{frame}{second}
+        wow
+    \end{frame}
+
+    \begin{frame}{third}
+        wow
+    \end{frame}
 \end{document}
