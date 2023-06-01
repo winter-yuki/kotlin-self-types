@@ -144,5 +144,19 @@ func testAssoc(_ x: some AAssoc, _ y: some AAssoc) {
 // }
 
 func testSomeConsumeKek(x: some ConstraintOnly, y: some ConstraintOnly) {
-    x.consume(y.produce())
+    // x.consume(y.produce())
+}
+
+class Extendable {}
+
+class DerivedExtendable : Extendable {
+    func derived() {}
+}
+
+extension Extendable {
+    func f() -> Self { return self }
+}
+
+func testExtendable() {
+    DerivedExtendable().f().derived()
 }

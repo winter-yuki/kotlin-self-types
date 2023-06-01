@@ -1,0 +1,670 @@
+%! suppress = EscapeHashOutsideCommand
+%! suppress = TooLargeSection
+%! suppress = MissingLabel
+
+% * Make friends tikz & colors
+%   https://en.wikibooks.org/wiki/LaTeX/Colors
+% * To enable vertical top alignment globally
+%   https://tex.stackexchange.com/questions/9889/positioning-content-at-the-top-of-a-beamer-slide-by-default
+\documentclass[usenames, dvipsnames]{beamer}
+% ------------------------------------------------
+
+% Graphics
+\usepackage{color}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usepackage{blkarray}
+\usepackage{graphicx}
+% ------------------------------------------------
+
+% Math
+\usepackage{amsmath, amsfonts}
+\usepackage{amssymb}
+\usepackage{proof}
+\usepackage{mathrsfs}
+% Crossed-out symbols
+% https://tex.stackexchange.com/questions/75525/how-to-write-crossed-out-math-in-latex
+\usepackage[makeroom]{cancel}
+\usepackage{mathtools}
+% ------------------------------------------------
+
+% Additional font sizes
+% https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
+\usepackage{moresize}
+% Additional colors
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+\usepackage{xcolor}
+% ------------------------------------------------
+
+% Language
+\usepackage[utf8] {inputenc}
+\usepackage[T2A] {fontenc}
+\usepackage[english, russian] {babel}
+\usepackage{indentfirst, verbatim}
+\usetikzlibrary{cd, babel}
+% ------------------------------------------------
+
+% Fonts
+\usepackage{stmaryrd}
+\usepackage{cmbright}
+\usepackage{wasysym}
+% ------------------------------------------------
+
+% Code
+% https://tex.stackexchange.com/questions/99475/how-to-invoke-latex-with-the-shell-escape-flag-in-texstudio-former-texmakerx
+\usepackage{minted}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#}
+% ------------------------------------------------
+
+% Template
+\usetheme{CambridgeUS}
+\usecolortheme{dolphin}
+% https://tex.stackexchange.com/questions/231439/beamer-how-to-make-font-larger-for-page-numbers
+\setbeamerfont{headline}{size=\scriptsize}
+\setbeamerfont{footline}{size=\scriptsize}
+% Remove heddline
+% https://tex.stackexchange.com/questions/33146/how-could-i-remove-a-header-in-a-beamer-presentation
+%\setbeamertemplate{headline}{}
+% Slide sizes
+% https://tex.stackexchange.com/questions/56768/how-to-set-a-small-default-font-size-with-beamer
+%\geometry{paperwidth=140mm,paperheight=105mm} % 4:3
+\geometry{paperwidth=168mm,paperheight=105mm} % 16:10
+% Remove navigation bar
+% https://stackoverflow.com/questions/3210205/how-to-get-rid-of-navigation-bars-in-beamer
+\beamertemplatenavigationsymbolsempty
+% ------------------------------------------------
+
+% Bullets
+% https://9to5science.com/change-bullet-style-formatting-in-beamer
+% https://tex.stackexchange.com/questions/185742/i-need-to-change-color-of-beamer-itemize-and-subitem-separately
+\setbeamertemplate{itemize item}{\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subsubitem}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{enumerate item}{\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\insertenumlabel.\insertsubenumlabel}
+\setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
+% ------------------------------------------------
+
+% Diff
+\usepackage{multicol}
+\usepackage{hyperref}
+\usepackage{soul} % https://tex.stackexchange.com/questions/23711/strikethrough-text
+% ------------------------------------------------
+
+% Appendix
+% Slide numbers
+% https://tex.stackexchange.com/questions/70448/dont-count-backup-slides
+\usepackage{appendixnumberbeamer}
+\newcommand{\backupbegin}{
+    \newcounter{framenumbervorappendix}
+    \setcounter{framenumbervorappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+    \addtocounter{framenumbervorappendix}{-\value{framenumber}}
+    \addtocounter{framenumber}{\value{framenumbervorappendix}}
+}
+% ------------------------------------------------
+
+% Custom commands
+\newcommand{\err}[0]{\textcolor{red}{ошибка}}
+% ------------------------------------------------
+
+% Speaker notes
+% https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
+% https://tex.stackexchange.com/questions/35444/split-beamer-notes-across-multiple-notes-pages/35496#35496
+%\setbeameroption{show notes on second screen=right} % enable speaker notes
+%--------------------------------------
+
+\author[Андрей Стоян]{Стоян Андрей Сергеевич \\ {\footnotesize научный руководитель: к.~ф.-м.~н.} Москвин Денис Николаевич \\ {\footnotesize научный консультант:} Новожилов Дмитрий Павлович}
+\institute[ИТМО/SE]{Университет ИТМО\\Разработка программного обеспечения/Software engineering}
+
+\title[Self-типы для языка Kotlin]{Дизайн и разработка Self-типов для языка Kotlin}
+\date{Санкт-Петербург 2023г.}
+
+\begin{document}
+    \setcounter{framenumber}{-1}
+
+    \maketitle
+
+
+    \section{Введение}
+
+
+    \subsection{Предметная область}
+
+    \begin{frame}{Системы типов}
+        \note{
+            0:20 - 0:50
+
+            \begin{enumerate}
+                \item Анализ типов позволяет выявлять заведомо некорректны программы
+                \begin{enumerate}
+                    \item но при этом отвергает много корректных, чтобы оставаться разрешимым
+                \end{enumerate}
+                \item Поэтому задачи дизайна безопасной системы для промышленного языка следующие:
+                \begin{enumerate}
+                    \item отвергнуть все некорректные программы
+                    \item а также типизировать как можно больше корректных программ
+                    \item но при этом не увеличить чрезмерно сложность и многословность кода
+                \end{enumerate}
+            \end{enumerate}
+        }
+
+        \begin{itemize}
+            \item Система типов позволяет выявлять заведомо некорректные программы
+            \item Проверка нетривиальных свойств программы --- неразрешимая задача
+            \item Анализ типов отвергает много корректных программ, чтобы оставаться разрешимым
+        \end{itemize}
+
+        \begin{center}
+            \includegraphics[width=0.36\textwidth]{fig/types}
+        \end{center}
+
+        \begin{block}{Задачи дизайна безопасной системы типов для промышленного языка программирования}
+            \begin{itemize}
+                \item Отвергнуть все некорректные программы (с точки зрения типов времени исполнения)
+                \item Типизировать как можно больше корректных программ
+                \item Сохранить практичность языка:
+                \begin{itemize}
+                    \item Сложность понимания
+                    \item Многословность кода
+                \end{itemize}
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+
+    \subsection{Постановка проблемы}
+
+    \begin{frame}[fragile]{Ограничение текущей системы типов Kotlin}
+        \note{
+            0:50 - 1:20
+
+            \begin{enumerate}
+                \item На данный момент в системе типов Kotlin нет прямого способа написать тип получателя в декларации метода
+                \begin{enumerate}
+                    \item то есть тип объекта, на котором вызывается метод
+                \end{enumerate}
+                \item Это приводит к нехватке точности анализа типов --- полезный корректный код не типизируется
+                \begin{enumerate}
+                    \item Так в примере метод добавления элемента в персистентную коллекцию очевидно возвращает новую коллекцию того же типа
+                    \item Однако мы не можем написать в декларации ничего специфичнее базового типа
+                    \item Вызов метода add на наследнике даёт базовый тип
+                    \item И корректный код не типизируется
+                \end{enumerate}
+            \end{enumerate}
+        }
+
+        \begin{block}{Ограничение}
+            Нет прямого способа написать тип получателя\footnote{\textbf{Получатель вызова} --- объект, на котором вызывается метод. Пример: \mintinline{kotlin}|a.f()|, \texttt{a} --- получатель.} (\mintinline{kotlin}|this|'а) в декларации метода.
+        \end{block}
+
+        \begin{block}{Нехватка точности анализа типов (полезный корректный код не типизируется)}
+            \begin{minted}{kotlin}
+                interface PCollection<E> {
+                    fun add(elem: E): #\framebox{PCollection<E>}# // нет способа написать тип специфичнее
+                }
+                fun test(list: PList<Int>) {
+                    list.add(42)        // : #\framebox{PCollection<Int>}# - тип базового класса
+                        .listSpecific() // #\textcolor{red}{ошибка типизации}#
+                }
+            \end{minted}
+        \end{block}
+
+%        \begin{block}{Нехватка полноты анализа типов (системой типов не гарантируется нужный инвариант)}
+%            \begin{minted}{kotlin}
+%                interface Combinable {
+%                    fun combine(other: #\framebox{Combinable}#): Combinable
+%                }
+%            \end{minted}
+%        \end{block}
+    \end{frame}
+
+
+    \subsection{Существующие решения}
+
+    \begin{frame}[fragile]{Существующие способы записи типа получателя}
+        \note{
+            1:20 - 1:45
+
+            \begin{enumerate}
+                \item Существуют способы всё же записать тип получателя в декларации
+                \item Первый --- добавить типовой параметр с рекурсивным ограничением
+                \item Второй --- добавить переопределяющие методы с более специфичным возвращаемым типом
+                \item Третий --- ассоциированные типы, в отличие от предыдущих двух не доступен в Kotlin, а доступен в Scala, например.
+            \end{enumerate}
+        }
+
+        \begin{block}{Типовой параметр с рекурсивным ограничением (Kotlin)}
+            \mintinline{kotlin}|interface PCollection<E, #\framebox{S : PCollection<E, S>}#>|
+            \begin{itemize}
+                \item[$\color{red} -$] Небезопасность: явное приведение типов: \mintinline[escapeinside=??]{kotlin}|this as S|
+                \item[$\color{red} -$] Сложность: рекурсивное ограничение
+                \item[$\color{red} -$] Многословность: дополнительный типовой параметр распространяется по всему коду
+%                \item[$-$] Зафиксированный типовой аргумент \texttt{S} не может быть уточнён в наследниках
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Переопределяющие методы с более специфичным возвращаемым типом (Kotlin)}
+            \begin{itemize}
+                \item[$\color{red} -$] Ненадёжность: нет контроля компилятора, что такие методы не были забыты
+                \item[$\color{red} -$] Многословность: переопределить каждый метод в каждом наследнике
+                \item[$\color{red} -$] Ограниченность: только для возвращаемого типа
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Ассоциированные типы (Scala)}
+            \begin{itemize}
+                \item[$\color{red} -$] Небезопасность, ненадёжность, ограниченность
+                \item[$\color{red} -$] Сложность использования и реализации в языке
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Self-типы}
+        \note{
+            1:40 - 2:00
+
+            \begin{enumerate}
+                \item Прямым способом записи типа получателя являются Self-типы
+                \item Они не имеют недостатков своих альтернатив
+                \item Однако требуют нетривиального языкового дизайна
+                \item В примере нужно просто вернуть Self-тип в базовом классе
+                \item И в месте использования на выходе метода add получим нужный тип
+            \end{enumerate}
+        }
+
+        \begin{itemize}
+            \item[$\Delta$] \emph{Self-тип} --- прямой способ записи типа получателя вызова (тип \mintinline{kotlin}|this|'а)
+            \item[$+$] Не имеет упомянутых ранее недостатков
+            \item[$\color{red} -$] Требует нетривиального языкового дизайна
+        \end{itemize}
+
+        \begin{block}{Self-типы уточняют анализ типов}
+            \begin{minted}{kotlin}
+                interface PCollection<out E> {
+                    fun add(value: E): #\framebox{Self}#
+                }
+                fun test(list: PList<Int>) {
+                    list.add(x)         // : #\framebox{PList<Int>}# - тип наследника
+                        .listSpecific() // корректный код типизируется
+                }
+            \end{minted}
+        \end{block}
+    \end{frame}
+
+
+    \section{Цель и задачи}
+
+    \begin{frame}{Цель и задачи}
+        \note{
+            2:00 - 2:30
+        }
+
+        \begin{block}{Цель}
+            Разработать дизайн Self-типов для языка Kotlin на основании опыта других языков и реализовать поддержку Self-типов в компиляторе kotlinc.
+        \end{block}
+
+        \begin{block}{Задачи}
+            \begin{enumerate}
+                \item Выделить особенности существующих решений: возможные значения Self-типа, допустимые позиции Self-типа и меры по обеспечению безопасности системы типов
+                \item Интегрировать Self-типы в типовую систему языка Kotlin на основании проведённого анализа решений
+                \item Реализовать поддержку Self-типов в компиляторе kotlinc
+            \end{enumerate}
+        \end{block}
+    \end{frame}
+
+
+    \section{Ход работы}
+
+
+    \subsection{Существующие решения}
+
+    \begin{frame}{Существующие реализации Self-типов}
+        \note{
+            2:30 - 2:50
+
+            \begin{enumerate}
+                \item Рассмотрим существующие реализации Self-типов
+                \item В научных работах используется типизированное лямбда исчисление
+                \begin{enumerate}
+                    \item На простой модели становятся видны как места, в которых система может стать небезопасной, так и возможные решения этих проблем
+                \end{enumerate}
+                \item Немало прикладных языков уже имеют поддержку Self-типов
+                \begin{enumerate}
+                    \item Во многих реализация Self-типов небезопасна: Python, TS и Java с плагином
+                    \item В Rust не поддерживаются нетривиальные случаи использования
+                    \item Swift же имеет полноценную безопасную поддержку, будем опираться на неё в дальнейшем
+                \end{enumerate}
+                \item Далее я интегрирую Self-типы в типовую систему Kotlin, опираясь как на академические результаты, так и на реализацию в Swift
+            \end{enumerate}
+        }
+
+        \begin{block}{Академические результаты, характерные черты}
+            \begin{itemize}
+                \item Кодирование в типизированном лямбда-исчислении
+                \item Видны аспекты сохранения безопасности системы с Self-типами % TODO
+                \item Предлагаются наиболее гибкие решения в ущерб практичности
+%                \item Свойства результатов доказываются на модельных исчислениях [\href{https://dl.acm.org/doi/pdf/10.1145/503502.503505}{FJ}, \href{https://dl.acm.org/doi/pdf/10.1145/2888392}{CoreThisJava}]
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Прикладные языки, поддерживающие Self-типы}
+            \begin{itemize}
+                \item[$\color{red} \mathbf{\times}$] Python, TypeScript, Java с плагином Manifold --- небезопасная реализация
+                \item[$\color{red} \mathbf{\times}$] Rust --- запрещено создавать трейт-объект\footnote{Трейты --- механизм специального полиморфизма в Rust}\footnote{Трейт-объект --- способ использовать неизвестный тип, реализующий трейт: \mintinline{rust}|Box<dyn Trait>|} при наличии метода с Self-типом
+                \item Swift --- полноценная безопасная реализация Self-типов
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+
+    \subsection{Интеграция Self-типов в типовую систему языка Kotlin}
+
+    \begin{frame}[fragile]{Материализация Self-типа}
+        \note{
+            2:50 - 3:20
+
+            \begin{enumerate}
+                \item Self-типу небезопасно покидать контекст своего объекта.
+                \begin{enumerate}
+                    \item В примере если результатом кода в рамке является Self-тип
+                    \item То код типизируется
+                    \item Таким образом объект типа A на выходе метода unsafe получает область видимости наследника, что приводит к ошибке времени исполнения
+                \end{enumerate}
+                \item Однако можно заметить, что Self-тип аналогичен параметру рекурсивного типа
+                \item А чтобы им воспользоваться нужно применить правило развёртки
+                \item Я адаптировал его для Kotlin следующим образом:
+                \begin{enumerate}
+                    \item Self-тип материализуется в тип получателя, код в рамочке имеет тип A
+                    \item И если никакой тип не будет являться подтипом Self-типа
+                    \item То небезопасный код справа больше не будет типизироваться
+                \end{enumerate}
+            \end{enumerate}
+        }
+
+        \vspace{-1.5em}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Пример: небезопасность покидания Self-типом контекста объекта}
+                    \begin{minted}{kotlin}
+                        abstract class A {
+                            fun self(): Self = this
+                            fun unsafe(a: A): Self = #\framebox{a.self()}#
+                        }
+
+                        class B : A() {
+                            fun bOnly() {}
+                        }
+
+                        fun test(a: A, b: B) {
+                            b.unsafe(a) // область видимости B
+                             .bOnly()   // #\textcolor{red}{ошибка исполнения}#
+                        }
+                    \end{minted}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Академическое решение}
+                    \begin{itemize}
+                        \item Self-тип аналогичен параметру рекурсивного типа $\mu Self\ldotp T[Self]$
+                        \item Для использования требуется применить правило развертки (unfold)
+                    \end{itemize}
+                \end{block}
+%                \begin{block}{Решение в Swift}
+%                    \begin{itemize}
+%                        \item Подстановка типа получателя вместо Self-типа
+%                    \end{itemize}
+%                \end{block}
+                \begin{block}{Решение для Kotlin: материализация}
+                    \begin{itemize}
+                        \item Self-тип должен переписываться в тип получателя в его области видимости:
+                        \[(self : A.() \to \framebox{$A$}) \in scope(A)\]
+                        \item Ограничение подтипизации: \[\forall T \ldotp T \bcancel{<:} Self, T \neq \bot, T \neq Self\]
+                    \end{itemize}
+                \end{block}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Значения Self-типа: существующие решения}
+        \note{
+            3:20 - 3:40
+
+            \begin{enumerate}
+                \item Для приложений важно уметь безопасно типизировать другие объекты Self-типом
+                \item Академические решения предполагают введение специальных видов методов
+                \item Однако это затрудняет развитие языка --- в дальнейшем эти методы придётся специальным образом учитывать
+                \item А так же эти возможности непросто использовать из-за нетривиальных правил, сопутствующим этим методам
+                \item Поэтому в прикладных языках не поддерживается типизация посторонних объектов Self'ом
+                \item Несмотря на наличие важных приложений, например, персистентных коллекций.
+            \end{enumerate}
+        }
+
+        \begin{block}{Академические решения}
+            \begin{itemize}
+                \item Специальные виды методов с безопасной типизацией посторонних объектов Self-типом
+                \begin{itemize}
+                    \item Ненаследуемые методы\footnote{Не могут быть унаследованы --- требуют переопределение в каждом наследнике} [\href{http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/papers/pdf/thistype-SAC09.pdf}{Saito et al, 2009}]
+                    \item Виртуальные конструкторы\footnote{Могут быть унаследованы по сложным правилам} [\href{https://www.researchgate.net/profile/Sukyoung-Ryu/publication/254004584_Exact_type_parameterization_and_ThisType_support/links/54b90ed10cf269d8cbf72d01/Exact-type-parameterization-and-ThisType-support.pdf}{Na et al, 2012}]
+                \end{itemize}
+                \item[$\color{red} -$] Затрудняется последующее развитие языка
+                \item[$\color{red} -$] Непросто использовать: рутинный код и нетривиальные правила
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Решения в прикладных языках}
+            \begin{itemize}
+                \item Только объект получатель (\mintinline{kotlin}|this|) имеет Self-тип
+                \item Не поддерживается возможность создания новых объектов Self-типа
+                \begin{itemize}
+                    \item[$\color{red} -$] Необходимо для важных приложений (например, персистентных коллекций)
+                \end{itemize}
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Значения Self-типа: решение для Kotlin}
+        \note{
+            3:40 - 4:00
+
+            \begin{enumerate}
+                \item Я сформулировал следующее условие безопасной типизации посторонних объектов Self-типом
+                \item ..
+                \item Его выполнение я гарантирую введением следующего правила
+                \item ..
+                \item Их отличают от рассмотренных выше походов то, что
+                \item им просто пользоваться, создаём объект того же класса, в котором находимся
+                \item Но взамен имеет ограниченную поддержку открытых классов
+            \end{enumerate}
+        }
+
+        \begin{block}{Условие безопасной замены типа \texttt{C} на \texttt{Self}}
+            \mintinline{kotlin}|C::class isSubtypeOf this.getClass()| должно выполняться статически для места кода
+        \end{block}
+
+        \vspace{-1.5em}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Правило значений Self-типа для Kotlin}
+                    \begin{enumerate}
+                        \item Класс \texttt{C} должен быть финальным
+                        \item Тип \mintinline{kotlin}|this|
+%                        \footnote{Получатель вызова текущей декларации}
+                        либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
+                        \item Тип \texttt{C} объявлен в том же модуле, в котором создаётся объект
+%                        \footnote{Иначе открытие класса нарушает совместимость исходных кодов}
+%                        \item[$+$] Локальное изменение в языке
+                        \item[$+$] Просто для использования
+                        \item[$-$] Ограниченная поддержка открытых классов
+                    \end{enumerate}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Пример: персистентный список}
+                    \begin{minted}{kotlin}
+                        class PListImpl<E> : PList<E> {
+                            override fun add(elem: E): Self {
+                                val newList = Cons(elem, list)
+                                return #\framebox{PListImpl(newList)}#
+                            }
+                        }
+                    \end{minted}
+                \end{block}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Возможнае позиции Self-типа: ковариантные позиции}
+        \note{
+
+        }
+
+        \begin{block}{Ковариантные позиции --- значение передаётся вызывающему коду}
+            \begin{itemize}
+                \item \mintinline{kotlin}|fun add(elem: E): #\framebox{Self}#| % из \mintinline{kotlin}|interface PCollection<out E>|
+                \item \mintinline{kotlin}|fun onClick(observer: (#\framebox{Self}#) -> Unit)| % из \mintinline{kotlin}|abstract class BaseButton|
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Академический результат [TODO]} % TODO
+            \begin{itemize}
+                \item Self-типы можно безопасно использовать в произвольной ковариантной позиции
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Решение в Swift}
+            \begin{itemize}
+                \item Нет поддержки вариантности типовых параметров
+                \item Полностью разрешена только позиция возвращаемого типа
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Решение для Kotlin}
+            \begin{itemize}
+                \item Есть поддержка вариантности типовых параметров
+                \item Допустимо использовать Self-типы во всех ковариантных позициях
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Контравариантные позиции Self-типа: существующие решения}
+        \begin{block}{Контравариантные позиции --- значение передаётся коду метода}
+            \begin{itemize}
+                \item[$\Delta$] \emph{Сложные методы} --- методы, содержащие Self-тип в контравариантной позиции
+                \item \mintinline{kotlin}|fun combine(other: #\framebox{Self}#): Self| % из \mintinline{kotlin}|interface Semigroup|
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Академические результаты}
+            \begin{itemize}
+                \item Есть сложный метод $\Rightarrow$ наследник не является подтипом~[\href{https://dl.acm.org/doi/pdf/10.1145/96709.96721}{Cook et al, 1989}]
+                \begin{itemize}
+                    \item Отношение matching'а вместо подтипизации [\href{https://www.researchgate.net/profile/Kim-Bruce-2/publication/221496196_Subtyping_Is_Not_a_Good_Match_for_Object-Oriented_Languages/links/09e415122545c6d7a4000000/Subtyping-Is-Not-a-Good-Match-for-Object-Oriented-Languages.pdf}{Bruce et al, 1996}]
+                    \item Разделение точных и экзистенциальных типов, локальное уточнение [\href{https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a9d601d3bf8c921748902d58078d0a1b28f6ec4d}{Saito et al, 2009}]
+                    \item Именованные wildcard'ы и точные типовые параметры [\href{https://www.researchgate.net/profile/Sukyoung-Ryu/publication/254004584_Exact_type_parameterization_and_ThisType_support/links/54b90ed10cf269d8cbf72d01/Exact-type-parameterization-and-ThisType-support.pdf}{Na et al, 2012}]
+                \end{itemize}
+                \item[$\color{red} -$] Массивные изменения в системе типов
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Решение в Swift}
+            \begin{itemize}
+                \item На экзистенциальных типах\footnote{Экзистенциальный тип в Swift --- неизвестный тип, реализующий протокол: \mintinline{swift}|any Protocol|} запрещено вызывать сложные методы
+                \item[$\color{red} -$] Добавление сложного метода нарушает совместимость исходных кодов
+%                \item В классах Self-типы в контравариантной позиции запрещены
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Контравариантные позиции Self-типа: решение для Kotlin}
+        \begin{itemize}
+            \item Для поддержки сложных методов запрещают виртуальную диспетчеризацию на них
+            \item % TODO
+            \item
+            \item
+            \item Все решения запрещают на сложных методах
+            \item
+            \item
+            \item Заменим виртуальную диспетчеризацию статической с помощью эмуляции трейтов
+            \item Другая возможность языка покрывает сценарии использования сложных методов
+        \end{itemize}
+
+        \begin{block}{Эмуляция трейтов с помощью контекстов языка Kotlin}
+            \begin{minted}{kotlin}
+                interface Semigroup<S> {
+                    fun S.combine(other: S): S
+                }
+
+                context(Semigroup<S>)
+                fun <S> combineAll(xs: Iterable<S>): S =
+                    xs.reduce { acc, x -> acc.combine(x) }
+            \end{minted}
+        \end{block}
+
+        \begin{block}{Решение для Kotlin}
+            Запрет на использование Self-типов в контравариантных позициях.
+        \end{block}
+    \end{frame}
+
+
+    \subsection{Реализация поддержки Self-типов в компиляторе kotlinc}
+
+    \begin{frame}{Детали реализации Self-типов в компиляторе kotlinc}
+        \begin{enumerate}
+%            \item Идентификатор типа \texttt{Self} введён как ключевое слово языка
+%            \item Введён новый вид типов --- Self-типы
+            \item Правила системы типов Kotlin доопределены для работы с Self-типами:
+            \begin{itemize}
+                \item Правило подтипизации
+                \item Правило определения непосредственных супертипов
+                \item Правило вычисления ближайших общих супертипов
+            \end{itemize}
+            \item Реализована область видимости\footnote{Области видимости --- сервисы компилятора, возвращающие множество функций, для которых объект данного типа может быть использован как получатель: $(plus : String\ldotp(String) \to String) \in scope(String)$}, материализующая Self-тип
+            \begin{itemize}
+                \item Для каждого места вызова метода с Self-типом генерируется синтетическая декларация % TODO
+                \item В будущем потребуется разработать более эффективную реализацию
+            \end{itemize}
+%            \item Реализовано преобразование, подменяющее Self-тип на его границу и метаинформацию, при переходе к промежуточному представлению бекенда компилятора (IR)
+            \item Полученная реализация протестирована:
+            \begin{itemize}
+                \item Корректный код c Self-типами допускается системой типов
+                \item Небезопасный код отвергается системой типов
+            \end{itemize}
+        \end{enumerate}
+    \end{frame}
+
+    \begin{frame}{Поддержаная функциональность}
+        \begin{block}{Поддержаны ковариантные позиции Self-типа}
+            TODO % TODO
+        \end{block}
+        \begin{block}{Поддержана типизация посторонних объектов Self-типа}
+            TODO % TODO
+        \end{block}
+        \begin{block}{Реализована проверка на использование Self-типов в недопустимых позициях}
+            TODO % TODO
+        \end{block}
+    \end{frame}
+
+
+    \section{Результаты}
+
+    \begin{frame}{Результаты}
+        \begin{enumerate}
+            \item Проанализированы существующие реализации Self-типов в других языках на предмет их возможностей и мер по обеспечению безопасности системы с Self-типами
+            \item Self-типы интегрированы\footnote{\url{https://github.com/winter-yuki/kotlin-self-types}} в типовую систему языка Kotlin с опорой на существующие решения
+            \item Поддержка Self-типов реализована\footnote{\url{https://github.com/winter-yuki/kotlin/tree/self-types}} в компиляторе kotlinc за счет добавления специального вида типов и материализующей Self-типы области видимости
+        \end{enumerate}
+    \end{frame}
+
+
+    \appendix
+
+
+    \section{Дополнительные слайды}
+
+    \begin{frame}{}
+        TODO % TODO
+    \end{frame}
+
+\end{document}
