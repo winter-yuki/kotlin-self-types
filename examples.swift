@@ -53,9 +53,9 @@ func testSomeToAny(x: some ConstraintOnly) -> any ConstraintOnly {
 }
 
 // error: member 'consume' cannot be used on value of type 'any ConstraintOnly'; consider using a generic constraint instead
-// func testAnyConsume(x: any ConstraintOnly) {
+func testAnyConsume(x: any ConstraintOnly) {
 //     x.consume(x.produce())
-// }
+}
 
 func testSomeConsume(x: some ConstraintOnly) {
     x.consume(x.produce())
