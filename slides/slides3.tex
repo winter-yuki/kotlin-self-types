@@ -85,6 +85,18 @@
 \setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
 % ------------------------------------------------
 
+% Table of contents format
+% https://tex.stackexchange.com/questions/642927/format-table-of-contents-in-beamer
+\setbeamertemplate{section in toc}{%
+        {\color{blue}\inserttocsectionnumber.}
+    \inserttocsection\par%
+}
+\setbeamertemplate{subsection in toc}{%
+        {\color{blue}\hspace{1em}\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+    \inserttocsubsection\par%
+}
+% ------------------------------------------------
+
 % Diff
 \usepackage{multicol}
 \usepackage{hyperref}
@@ -740,20 +752,539 @@
     \appendix
 
 
-    \section{Дополнительные слайды}
+    \section*{Дополнительные слайды}
 
     \begin{frame}{Содержание дополнительных слайдов}
         \tableofcontents
     \end{frame}
 
 
-    \subsection{Реализация}
+    \subsection{Материалы}
 
-    % TODO
+    \begin{frame}{Материалы}
+        %! suppress = LineBreak
+        \begin{enumerate}
+            \item \href{https://youtrack.jetbrains.com/issue/KT-6494}{\color{blue} YouTrack: Запрос на добавление Self-типов в Kotlin}
+            \item Cook, William R., Walter Hill, and Peter S. Canning. 1989. <<Inheritance is not subtyping>>. Proceedings of the 17th ACM SIGPLAN-SIGACT symposium on Principles of programming languages. {\color{blue}\url{https://cs.rice.edu/~javaplt/papers/Inheritance.pdf}}
+            \item Sukyoung Ryu. 2016. <<ThisType for Object-Oriented Languages: From Theory to Practice>>. ACM Trans. Program. Lang. Syst. 38, 3, Article 8 (May 2016), 66 pages. {\color{blue}\url{https://dl.acm.org/doi/10.1145/2888392}}
+            \item \href{https://github.com/manifold-systems/manifold/blob/master/manifold-deps-parent/manifold-ext/README.md\#the-self-type-with-self}{\color{blue} Self-типы как плагин для Java}
+            \item \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue} Swift: Self-типы}
+            \item \href{https://peps.python.org/pep-0673/}{\color{blue} Python: Self-типы PEP}
+            \item \href{https://www.typescriptlang.org/docs/handbook/2/classes.html\#this-types}{\color{blue}TypeScript: this-типы}
+        \end{enumerate}
+    \end{frame}
+
+
+    \subsection{Kotlin}
+
+    \begin{frame}{Вариантность}
+        \begin{block}{Вариантность типового параметра}
+            \begin{itemize}
+                \item Определят, в каких позициях можно использовать этот типовой параметр
+                \item Задаёт отношение подтипизации между параметризованными типами
+            \end{itemize}
+        \end{block}
+        \begin{block}{Инвариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface Inv<T> { fun id(x: ?\framebox{T}?): ?\framebox{T}? }|}
+            \begin{itemize}
+                \item Можно использовать в произвольных позициях в декларациях методов
+                \item Не устанавливает отношения подтипизации: \texttt{Inv<B> !<:> Inv<A>}
+            \end{itemize}
+        \end{block}
+        \begin{block}{Ковариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface Out<?\framebox{out}? T> { fun produce(): ?\framebox{T}? }|}
+            \begin{itemize}
+                \item Можно использовать в исходящих позициях в декларациях методов
+                \item Устанавливает прямое отношение подтипизации: \texttt{B <: A => Out<B> <: Out<A>}
+            \end{itemize}
+        \end{block}
+        \begin{block}{Контравариантные типовые параметры: \mintinline[escapeinside=??]{kotlin}|interface In<?\framebox{in}? T> { fun accept(x: ?\framebox{T}?) }|}
+            \begin{itemize}
+                \item Можно использовать во входящих позициях в декларациях методов
+                \item Устанавливает обратное отношение подтипизации: \texttt{B <: A => In<B> :> In<A>}
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+
+    \subsection{Существующие решения}
+
+    \begin{frame}[fragile]{Дополнительный типовой параметр}
+        \begin{block}{Пример: персистентные коллекции с дополнительным типовым параметром}
+            \begin{minted}[escapeinside=??]{kotlin}
+                interface PCollection<out E, ?\framebox{out S : PCollection<E, S>}?> {
+                    fun add(value: E): ?\framebox{S}?
+                }
+                interface PList<out E, ?\framebox{out S : PList<E, S>}?> : PCollection<E, ?\framebox{S}?> {
+                    fun listSpecific()
+                }
+                fun <?\framebox{L : PList<Int, L>}?> test(xs: ?\framebox{L}?) {
+                    xs.add(42) /* : ?\framebox{L}? */ .listSpecific()
+                }
+            \end{minted}
+        \end{block}
+
+        \begin{block}{Недостатки}
+            \begin{itemize}
+                \item Паттерн рекурсивного ограничения распространяется по всему коду
+                \item Требуется явное приведение типов: \mintinline[escapeinside=??]{kotlin}|this as S|
+                \item Однажды зафиксированный типовой аргумент \texttt{S} не может быть уточнён в наследниках
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Добавление abstract override методов}
+        \begin{block}{Пример: персистентные коллекции с abstract override методами}
+            \begin{minted}[escapeinside=??]{kotlin}
+                interface PCollection<out E> {
+                    fun add(value: E): ?\framebox{PCollection<E>}?
+                }
+                interface PList<out E> : PCollection<E> {
+                    abstract override fun add(value: E): ?\framebox{PList<E>}?
+                    fun listSpecific()
+                }
+                fun test(xs: PList<Int>) {
+                    xs.add(42) /* : ?\framebox{PList<Int>}? */ .listSpecific()
+                }
+            \end{minted}
+        \end{block}
+
+        \begin{block}{Недостатки}
+            \begin{itemize}
+                \item Много рутинного кода: переопределить каждый метод в каждом наследнике
+                \item Нет контроля компилятора, что abstract override методы не были забыты
+                \item Работает только для возвращаемого типа (типы параметров обязаны совпадать)
+            \end{itemize}
+        \end{block}
+    \end{frame}
+
+
+    \subsection{Сценарии использования}
+
+    \begin{frame}[fragile]{Рекурсивные структуры данных}
+        Также Self-типы помогают строить рекурсивные структуры данных из вершин одного типа:
+        \begin{minted}[escapeinside=??]{kotlin}
+            // исходящая контравариантная позиция
+            abstract class Node<out T>(val value: T, val children: List<?\framebox{Self}?>)
+            class BetterNode<out T>(value: T, children: List<?\framebox{Self}?> = emptyList()) :
+                Node<T>(value, children) {
+                fun betterSpecific() = println(value)
+            }
+
+            fun test() {
+                val betterTree = BetterNode(value = 2, children =
+                    listOf<?\framebox{BetterNode<Int>}?>(
+                        BetterNode(1, listOf(BetterNode(0))),
+                        BetterNode(4, listOf(BetterNode(3), BetterNode(5)))))
+                betterTree.children
+                    .flatMap { it.children }
+                    .forEach { it.betterSpecific() } // Печатает "0 3 5"
+            }
+        \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Шаблон <<Абстрактная фабрика>>}
+        Пусть требуется по элементу типизируемым образом получить породившую его фабрику.
+
+        \begin{minted}[escapeinside=??]{kotlin}
+            abstract class Element<out F : Factory>(val factory: F)
+
+            interface Factory {
+                fun create(): Element<?\framebox{Self}?> // ковариантная исходящая позиция
+            }
+
+            abstract class SpecificFactory : Factory {
+                abstract fun doSpecific()
+            }
+
+            fun <F : SpecificFactory> test(element: Element<F>) {
+                entity.factory.doSpecific()
+            }
+        \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Шаблон <<Наблюдатель>>}
+        \begin{columns}
+            \begin{column}{0.48\textwidth}
+                Абстрагируем логику регистрации и нотификации наблюдателей:
+                \begin{minted}[escapeinside=??]{kotlin}
+                    abstract class AbstractObservable {
+                        private val observers =
+                            mutableListOf<(Self) -> Unit>()
+                        // контравариантная входная позиция
+                        fun observe(
+                            observer: (?\framebox{Self}?) -> Unit
+                        ) {
+                            observers += observer
+                        }
+                        private fun notifyObservers() {
+                            observers.forEach { observer ->
+                                observer(?\framebox{this}?)
+                            }
+                        }
+                    }
+                \end{minted}
+            \end{column}
+
+            \begin{column}{0.49\textwidth}
+                \vspace{-0.5em}
+                \begin{minted}[escapeinside=??]{kotlin}
+                    class Entity : AbstractObservable {
+                        var color: Color = Color.Purple
+                            set(new: Color) {
+                                field = new
+                                notifyObservers()
+                            }
+                    }
+                    fun observer(entity: ?\framebox{Entity}?) {
+                        println("New: ${it.color}")
+                    }
+                    fun test() {
+                        val entity = Entity()
+                        entity.observe(::observer)
+                        // Печатает "New: Color.Blue"
+                        entity.color = Color.Blue
+                    }
+                \end{minted}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Алгебры}
+        Наследник не подтип, если рекурсивный тип стоит в контравариантной позиции\footnote{\href{https://dl.acm.org/doi/pdf/10.1145/96709.96721}{[Inheritance is not subtyping, Cook et al, 1989]}}.
+        \begin{minted}{kotlin}
+            interface Semigroup {
+                infix fun add(other: Self): Self
+            }
+        \end{minted}
+        От использования рекурсивного типа можно отказаться с помощью контекстных ресиверов:
+        \begin{minted}{kotlin}
+            interface Semigroup<S> {
+                infix fun S.add(other: S): S
+            }
+            interface Monoid<M> : Semigroup<M> {
+                val empty: M
+            }
+            context(Monoid<T>)
+            fun <T> concat(vararg xs: T): T =
+                xs.fold(empty) { acc, x -> acc add a }
+        \end{minted}
+    \end{frame}
+
+
+    \subsection{Решения в других языках}
+
+    \begin{frame}[fragile]{Ассоциированные типы (abstract type members)}
+        \vspace{-1.5em}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.40\textwidth}
+                \begin{itemize}
+                    \item Поддерживаются в Scala и Swift
+                    \item Аналогично рекурсивным дженерикам, но без зашумления клиентского кода
+                    \item Сложны в реализации: отслеживание по какому пути получен ассоциированный тип
+                    \item Запроса от пользователей на поддержку ассоциированных типов в Kotlin нет
+                \end{itemize}
+            \end{column}\hfill%
+            \begin{column}[t]{0.58\textwidth}
+                \begin{minted}[escapeinside=\#\#]{scala}
+                    trait PCollection[T] {
+                      #\framebox{type S}#
+                      def add(x: T): #\framebox{S}#
+                    }
+
+                    trait PList[T] extends PCollection[T] {
+                      #\framebox{type S <: PList[T]}#
+                      def listSpecific: Unit
+                    }
+
+                    class PListImpl[T] extends PList[T] {
+                      #\framebox{type S = PListImpl[T]}#
+                      override def add(x: T): #\framebox{PListImpl[T]}# = // ..
+                      override def listSpecific: Unit = // ...
+                    }
+                \end{minted}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{TypeScript: небезопасность системы типов}
+        \begin{minted}{typescript}
+            class Box {
+              sameAs(other: this): boolean { /* ... */ }
+            }
+            class DerivedBox extends Box {
+              otherContent: string = "?";
+              sameAs(other: this): boolean {
+                if (other.otherContent === undefined) {
+                  console.log("broken")
+                }
+                /* ... */
+              }
+            }
+            const base = new Box();
+            const derived = new DerivedBox();
+            function test(x: Box): boolean { return x.sameAs(base) }
+            test(derived) // Печатает "broken"
+        \end{minted}
+    \end{frame}
+
+    \begin{frame}{Swift}
+        \begin{itemize}
+            \item Существует полная поддержка \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/\#Self-Type}{\color{blue}Self-типов} для простой исходящей позиции
+            \item Для методов классов Self-тип доступен только для исходящей позиции
+            \item Если декларация метода протокола\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} содержит \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции:
+            \begin{itemize}
+                \item Запрещено вызывать такие методы виртуально на \mintinline{swift}|any Protocol|
+                \item Можно вызывать, если протокол является ограничением типового параметра или при мономорфизации на \mintinline{swift}|some Protocol|
+                \item Реализующий класс обязан заменить такие вхождения Self-типа на себя
+                \item Ситуация становится аналогична языкам без наследования
+            \end{itemize}
+            \item Ассоциированные типы так же позволяют эмулировать Self-типы, но на один уровень иерархии и с дополнительными приведениями типа
+            \item Self-типы в расширениях ссылаются на расширяемый тип
+        \end{itemize}
+    \end{frame}
+
+
+    \subsection{Формализация}
+
+    \begin{frame}[fragile]{Формализация Self-типов --- рекурсивные типы}
+        \note<1->{3:00 - 3:30}
+
+        Тип объекта формализуется в расширенном $\lambda$-исчислении через тип записи.
+        \begin{block}{Правило подтипизации для типов записей}
+            \[
+                %! suppress = EscapeAmpersand
+                \infer{
+                    \{x_1 : \sigma_1, \ldots, x_k : \sigma_k, \ldots, x_n : \sigma_n\}
+                    <:
+                    \{x_1 : \tau_1, \ldots, x_k : \tau_n\}
+                }{\sigma_1 <: \tau_1 & \ldots & \sigma_k <: \tau_k}
+            \]
+        \end{block}
+
+        \vspace{-1em}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Пример: тип объекта одномерной точки}
+                    \vspace{-1.2em}
+                    \begin{align*}
+                        T &= \{ x : int, equal : T \to bool \} \\
+                        T &= \mu t \ldotp \{ x : int, equal : t \to bool \}
+                    \end{align*}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}[t]{0.485\textwidth}
+                \begin{block}{Правило подтипизации рекурсивных типов}
+                    \begin{equation*}
+                        \infer[\text{Amber rule}]{
+                            \Gamma \vdash \mu s\ldotp \sigma[s] <: \mu t\ldotp \tau[t]
+                        }{
+                            \Gamma, s <: t \vdash \sigma[s] <: \tau[t]
+                        }
+                    \end{equation*}
+                \end{block}
+            \end{column}
+        \end{columns}
+
+        \begin{block}{Наследник не является подтипом [Inheritance is not subtyping, Cook at al, 1989]}
+            \vspace{-1em}
+            \begin{align*}
+                T &= \mu t \ldotp \{ x : int, equal : t \to bool \} \\
+                T' &= \mu t \ldotp \{ x : int, equal : t \to bool, dist : int \}
+            \end{align*}
+
+            Рекурсивный тип входит в тип $equal$ в контравариантной позиции, значит, $T'$ не подтип $T$.
+        \end{block}
+    \end{frame}
+
+    \begin{frame}{Традиционная подтипизация [\href{https://dl.acm.org/doi/pdf/10.1145/2888392}{Ryu et al, 2016}]}
+        \begin{center}
+            \includegraphics[height=0.85\textheight]{fig/subtyping1}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}{Пересмотренная подтипизация [\href{https://dl.acm.org/doi/pdf/10.1145/2888392}{Ryu et al, 2016}]}
+        \begin{center}
+            \includegraphics[height=0.85\textheight]{fig/subtyping2}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}{Соответствие правил для Kotlin с [\href{https://dl.acm.org/doi/pdf/10.1145/2888392}{Ryu et al, 2016}]}
+        \begin{itemize}
+            \item Self-тип --- это точный тип  $\mu t\ldotp \{ \overline{l_i : \tau_i} \}$ (exact type)
+            \item А любой другой --- экзистенциальный тип $\exists s \triangleleft \alpha \ldotp s$ (inexact type)
+        \end{itemize}
+
+        \begin{block}{Подтипизация}
+            Точный тип может быть подтипом экзистенциального, но не наоборот:
+            \begin{columns}[onlytextwidth]
+                \begin{column}[t]{0.485\textwidth}
+                    \[
+                        \infer[\text{RS-RtoS}]{
+                            \Delta \vdash \alpha <: \exists s \triangleleft \beta \ldotp s
+                        }{
+                            \Delta \vdash \alpha \triangleleft \beta
+                        }
+                    \]
+                \end{column}\hfill%
+                \begin{column}[t]{0.485\textwidth}
+                    \[
+                        \infer[\text{Self-NoSelf}]{
+                            \Delta \vdash Self(A) <: B
+                        }{
+                            \Delta \vdash A <: B
+                        }
+                    \]
+                \end{column}
+            \end{columns}
+        \end{block}
+
+        \begin{block}{Переписывание Self-типа}
+            Переписывание сходно с одним шагом развёртки изорекурсивного типа:
+            \vspace{-1em}
+            \begin{columns}[onlytextwidth]
+                \begin{column}[t]{0.41\textwidth}
+                    \[
+                        %! suppress = EscapeAmpersand
+                        \infer[\text{Unfold-Self}]{
+                            \Delta \vdash unfold(o) : [t \mapsto U]T
+                        }{
+                            U = \mu t \ldotp T & \Delta \vdash o : U
+                        }
+                    \]
+                \end{column}\hfill%
+                \begin{column}[t]{0.58\textwidth}
+                    \[
+                        %! suppress = EscapeAmpersand
+                        \infer[\text{Unfold-NoSelf}]{
+                            \Delta \vdash unfold(o) : [t \mapsto U']T
+                        }{
+                            U = \mu t \ldotp T
+                            &
+                            U' = \exists s \triangleleft U \ldotp s
+                            &
+                            \Delta \vdash o : U'
+                        }
+                    \]
+                \end{column}
+            \end{columns}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Правила подтипизации для Self-типа}
+        \begin{block}{Граница Self-типа}
+            Тип $B$ является границей Self-типа (обозначение \underline{$Self(B)$}), если $B$~--- наиболее общий тип ресивера, на котором этот метод может быть вызван.
+            Совпадает с типом текущего класса.
+        \end{block}
+
+        \begin{block}{Правила подтипизации для Self-типа}
+            \begin{enumerate}
+                \item \label{itm:covariant-bound} $B <: A \iff Self(B) <: Self(A)$ для возможности переопределения методов с \texttt{Self}
+                \item \label{itm:this-subtype} $B <: A \iff Self(B) <: A$, чтобы код с \mintinline{kotlin}|this| оставался типизируемым
+                \item \label{itm:any-nothing} $Nothing <: Self(A)$ и $Self(A) <: Any$
+                \item \label{itm:no-subtypes} $B \bcancel{<:} Self(A)$, если $B$ не подходит под правила (\ref{itm:covariant-bound}) и (\ref{itm:any-nothing})
+            \end{enumerate}
+        \end{block}
+
+        \begin{block}{Безопасность присваиваний}
+            \begin{enumerate}
+                \item \mintinline{kotlin}|this|, ссылающийся на ресивер $C$, имеет тип $Self(C)$
+                \item Правило (\ref{itm:no-subtypes}) не позволяет использовать посторонний объект в качестве $Self$
+            \end{enumerate}
+        \end{block}
+    \end{frame}
+
+    \begin{frame}[fragile]{Некорректное создание новых объектов}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.46\textwidth}
+                \vspace{0.5em}
+
+                Для реализации персистентных и иммутабельных структур данных нужно иметь возможность создавать новый объект Self-типа.
+
+                \vspace{1em}
+                \begin{block}{В общем случае небезопасно}
+                    \begin{itemize}
+                        \item Создавать объект открытого класса
+                        \item Создавать объект другого класса
+                    \end{itemize}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}[t]{0.50\textwidth}
+                \begin{minted}[escapeinside=??]{kotlin}
+                    open class A {
+                        fun newOfOpenA(): Self = A()
+                        fun newOtherQ(): Self = Q()
+                    }
+
+                    class Q : A() { fun qOnly() {} }
+                    class P : A() { fun pOnly() {} }
+
+                    fun test(q: Q, p: P) {
+                        q.newOfOpenA() // скоуп типа Q для A
+                         .qOnly()      // ?\err?
+                        p.newOther()   // скоуп типа P для Q
+                         .pOnly()      // ?\err?
+                    }
+                \end{minted}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Безопасное создание новых объектов типа \texttt{Self(C)}}
+        \begin{columns}[onlytextwidth]
+            \begin{column}[t]{0.46\textwidth}
+                \begin{block}{Ограничения}
+                    \begin{itemize}
+                        \item Класс \texttt{C} должен быть финальным
+                        \item Тип \mintinline{kotlin}|this|\footnote{Ресивер текущей декларации (c типом bound'а Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
+                        \item Тип \texttt{C} объявлен в том же модуле, в котором создаётся объект\footnote{Иначе открытие класса нарушало совместимость исходных кодов}
+                    \end{itemize}
+                \end{block}
+            \end{column}\hfill%
+            \begin{column}[t]{0.50\textwidth}
+                \begin{minted}[escapeinside=??]{kotlin}
+                    sealed interface Data {
+                        data class One(var a: Int) : Data
+
+                        data class Two(
+                            var a: Int, var b: Int
+                        ) : Data
+
+                        fun copy(): Self = when (this) {
+                            is One -> ?\colorbox{green}{One(a)}?   //: Self(One)
+                            is Two -> ?\colorbox{green}{Two(a, b)}?//: Self(Two)
+                        } // : Self(Data)
+                    }
+                \end{minted}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Безопасность переписывания}
+        \begin{enumerate}
+            \item Значение Self-типа безопасно относительно переписывания
+            \item Если ресивер имеет тип $A \neq Self$, \texttt{Self} переписывается в $A$, а $A \bcancel{<:} Self(A)$
+            \item Если ресивер имеет тип \texttt{Self(B)}, то \texttt{Self(A)} декларации переписывается в \texttt{Self(B)}, и известно, что значение ресивера безопасно, материализуемое значение безопасно
+        \end{enumerate}
+
+        \begin{minted}{kotlin}
+            abstract class A {
+                fun self(): Self = this
+                fun unsafeSelf(a: A): Self/*(A)*/ =
+                    a    /* : A       */ .self() // : #\colorbox{yellow}{A}#, #\textcolor{red}{ошибка компиляции}#
+                fun safeSelf():       Self/*(A)*/ =
+                    this /* : Self(A) */ .self() // : #\colorbox{yellow}{Self(A)}#, ok, Self(A) <: Self(A)
+            }
+        \end{minted}
+    \end{frame}
+
+
+    \subsection{Реализация прототипа}
+
+    \begin{frame}{Архитектура компилятора Kotlin (K2)}
+        \includegraphics[width=\textwidth]{fig/arch}
+    \end{frame}
+
     \begin{frame}{Детали реализации Self-типов в компиляторе kotlinc}
         \note{
-            5:20 - 5:40
-
             \begin{enumerate}
                 \item Я реализовал прототип Self-типов в компиляторе kotlinc
                 \item Для этого я:
