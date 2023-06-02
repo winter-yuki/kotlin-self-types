@@ -34,6 +34,8 @@
 % Additional colors
 % https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
 \usepackage{xcolor}
+% \texttimes
+\usepackage{textcomp}
 % ------------------------------------------------
 
 % Language
@@ -128,7 +130,7 @@
 % Speaker notes
 % https://tex.stackexchange.com/questions/114219/add-notes-to-latex-beamer
 % https://tex.stackexchange.com/questions/35444/split-beamer-notes-across-multiple-notes-pages/35496#35496
-\setbeameroption{show notes on second screen=right} % enable speaker notes
+%\setbeameroption{show notes on second screen=right} % enable speaker notes
 %--------------------------------------
 
 \author[Андрей Стоян]{Стоян Андрей Сергеевич \\ {\footnotesize научный руководитель: к.~ф.-м.~н.} Москвин Денис Николаевич \\ {\footnotesize научный консультант:} Новожилов Дмитрий Павлович}
@@ -789,7 +791,7 @@
                 \item Например, в вызове \mintinline{kotlin}|"a".plus("b")| строка \mintinline{kotlin}|"a"| является ресивером для функции \mintinline{kotlin}|plus|
             \end{itemize}
         \end{block}
-        \pause
+
         \begin{block}{Область видимости типа}
             Множество функций, для которых объект данного типа может быть использован как ресивер.
             \begin{itemize}
@@ -1211,6 +1213,9 @@
         \end{block}
     \end{frame}
 
+
+    \subsection{Интеграция Self-типов в типовую систему Kotlin}
+
     \begin{frame}[fragile]{Правила подтипизации для Self-типа}
         \begin{block}{Граница Self-типа}
             Тип $B$ является границей Self-типа (обозначение \underline{$Self(B)$}), если $B$~--- наиболее общий тип ресивера, на котором этот метод может быть вызван.
@@ -1273,7 +1278,7 @@
     \begin{frame}[fragile]{Безопасное создание новых объектов типа \texttt{Self(C)}}
         \begin{columns}[onlytextwidth]
             \begin{column}[t]{0.46\textwidth}
-                \begin{block}{Ограничения}
+                \begin{block}{Правило}
                     \begin{itemize}
                         \item Класс \texttt{C} должен быть финальным
                         \item Тип \mintinline{kotlin}|this|\footnote{Ресивер текущей декларации (c типом bound'а Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
@@ -1300,13 +1305,58 @@
         \end{columns}
     \end{frame}
 
+    \begin{frame}[fragile]{Self-типы для функций-расширений}
+        \begin{itemize}
+            \item Для функций-расширений не актуальны проблемы наследования
+            \item[$\Rightarrow$] Self-тип в них можно использовать в произвольной позиции подобно инвариантному типовому параметру
+        \end{itemize}
+
+        \vspace{1em}
+        \begin{minted}{kotlin}
+            fun A.f(x: Self, p: Out<Self>, c: In<Self>): Self {
+                c.consume(p.produce()); return x
+            }
+
+            // аналогично
+
+            fun <T : A> T.f(x: T, p: Out<T>, c: In<T>): T {
+                c.consume(p.produce()); return x
+            }
+        \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Способы проверки безопасности обновления системы типов}
+        \begin{itemize}
+            \item[$\times$] Формализация фрагмента языка в виде модельного исчисления
+            \begin{itemize}
+                \item[$+$] Можно получить верифицированные доказательства свойств
+                \item[$-$] Чрезвычайно трудоёмко
+                \item[$-$] Под вопросом репрезентативность модельного языка
+            \end{itemize}
+            \item[$\times$] Реализовать в компиляторе и подвергнуть массовому тестированию
+            \begin{itemize}
+                \item[$+$] Реализация будет корректной с высокой вероятностью
+                \item[$-$] Требуются развитые методы генерации семантически корректных программ
+                \item[$-$] Требуется примерно полная реализация возможности в компиляторе
+            \end{itemize}
+            \item[\checkmark] Исследовать существующие решения и реализовывать заведомо безопасным образом
+            \begin{itemize}
+                \item[$+$] Априорно не требуется реализация в компиляторе
+                \item[$+$] Фокус на реальном языке и его отличиях от других
+                \item[$-$] Ничего нельзя со всей определённостью гарантировать
+                \item[$\Rightarrow$] Хорошо подходит для первого приближения дизайна новой возможности системы типов
+            \end{itemize}
+        \end{itemize}
+    \end{frame}
+
     \begin{frame}[fragile]{Безопасность переписывания}
         \begin{enumerate}
-            \item Значение Self-типа безопасно относительно переписывания
+            \item Значение Self-типа безопасно относительно переписывания (строили правила соответствующим образом)
             \item Если ресивер имеет тип $A \neq Self$, \texttt{Self} переписывается в $A$, а $A \bcancel{<:} Self(A)$
             \item Если ресивер имеет тип \texttt{Self(B)}, то \texttt{Self(A)} декларации переписывается в \texttt{Self(B)}, и известно, что значение ресивера безопасно, материализуемое значение безопасно
         \end{enumerate}
 
+        \vspace{1em}
         \begin{minted}{kotlin}
             abstract class A {
                 fun self(): Self = this
