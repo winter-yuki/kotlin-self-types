@@ -1218,7 +1218,7 @@
 
     \begin{frame}[fragile]{Правила подтипизации для Self-типа}
         \begin{block}{Граница Self-типа}
-            Тип $B$ является границей Self-типа (обозначение \underline{$Self(B)$}), если $B$~--- наиболее общий тип ресивера, на котором этот метод может быть вызван.
+            Тип $B$ является границей Self-типа (обозначение \underline{$Self(B)$}), если $B$~--- наиболее общий тип получателя, на котором этот метод может быть вызван.
             Совпадает с типом текущего класса.
         \end{block}
 
@@ -1233,7 +1233,7 @@
 
         \begin{block}{Безопасность присваиваний}
             \begin{enumerate}
-                \item \mintinline{kotlin}|this|, ссылающийся на ресивер $C$, имеет тип $Self(C)$
+                \item \mintinline{kotlin}|this|, ссылающийся на получатель $C$, имеет тип $Self(C)$
                 \item Правило (\ref{itm:no-subtypes}) не позволяет использовать посторонний объект в качестве $Self$
             \end{enumerate}
         \end{block}
@@ -1265,9 +1265,9 @@
                     class P : A() { fun pOnly() {} }
 
                     fun test(q: Q, p: P) {
-                        q.newOfOpenA() // скоуп типа Q для A
+                        q.newOfOpenA() // scope типа Q для A
                          .qOnly()      // ?\err?
-                        p.newOther()   // скоуп типа P для Q
+                        p.newOther()   // scope типа P для Q
                          .pOnly()      // ?\err?
                     }
                 \end{minted}
@@ -1281,7 +1281,7 @@
                 \begin{block}{Правило}
                     \begin{itemize}
                         \item Класс \texttt{C} должен быть финальным
-                        \item Тип \mintinline{kotlin}|this|\footnote{Ресивер текущей декларации (c типом bound'а Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
+                        \item Тип \mintinline{kotlin}|this|\footnote{Получатель текущей декларации (c типом границы Self-типа)} либо равен \texttt{С}, либо включает \texttt{C} после smart-cast
                         \item Тип \texttt{C} объявлен в том же модуле, в котором создаётся объект\footnote{Иначе открытие класса нарушало совместимость исходных кодов}
                     \end{itemize}
                 \end{block}
@@ -1352,8 +1352,8 @@
     \begin{frame}[fragile]{Безопасность переписывания}
         \begin{enumerate}
             \item Значение Self-типа безопасно относительно переписывания (строили правила соответствующим образом)
-            \item Если ресивер имеет тип $A \neq Self$, \texttt{Self} переписывается в $A$, а $A \bcancel{<:} Self(A)$
-            \item Если ресивер имеет тип \texttt{Self(B)}, то \texttt{Self(A)} декларации переписывается в \texttt{Self(B)}, и известно, что значение ресивера безопасно, материализуемое значение безопасно
+            \item Если получатель имеет тип $A \neq Self$, \texttt{Self} переписывается в $A$, а $A \bcancel{<:} Self(A)$
+            \item Если получатель имеет тип \texttt{Self(B)}, то \texttt{Self(A)} декларации переписывается в \texttt{Self(B)}, и известно, что значение получателя безопасно, переписываемое значение безопасно
         \end{enumerate}
 
         \vspace{1em}
@@ -1376,22 +1376,6 @@
     \end{frame}
 
     \begin{frame}{Детали реализации Self-типов в компиляторе kotlinc}
-        \note{
-            \begin{enumerate}
-                \item Я реализовал прототип Self-типов в компиляторе kotlinc
-                \item Для этого я:
-                \begin{enumerate}
-                    \item Дополнил правила типизации для работы с Self-типами
-                    \item Реализовал область видимости, материализующую Self-тип
-                    \begin{enumerate}
-                        \item Для этого я генерирую для каждого места использования метода с Self-типом синтетическую декларацию
-                        \item В будущем потребуется разработать более эффективную реализацию
-                    \end{enumerate}
-                    \item Также я протестировал полученную реализацию
-                \end{enumerate}
-            \end{enumerate}
-        }
-
         \begin{enumerate}
             \item Идентификатор типа \texttt{Self} введён как ключевое слово языка
             \item Введён новый вид типов --- Self-типы
