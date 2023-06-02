@@ -95,6 +95,10 @@
         {\color{blue}\hspace{1em}\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
     \inserttocsubsection\par%
 }
+\setbeamertemplate{subsubsection in toc}{%
+        {\color{blue}\hspace{2em}\tiny\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+    \inserttocsubsubsection\par%
+}
 % ------------------------------------------------
 
 % Diff
@@ -546,7 +550,6 @@
                 \end{block}
                 \begin{block}{}
                     \begin{itemize}
-%                        \item[$+$] Локальное изменение в языке
                         \item[$+$] Простота использования
                         \item[$\color{red} -$] Ограниченная поддержка открытых классов
                     \end{itemize}
@@ -633,7 +636,7 @@
                 \item В классе есть сложный метод $\Rightarrow$ наследник не является подтипом~[\href{https://dl.acm.org/doi/pdf/10.1145/96709.96721}{Cook et al, 1989}]
                 \begin{itemize}
                     \item Отношение matching'а вместо подтипизации [\href{https://www.researchgate.net/profile/Kim-Bruce-2/publication/221496196_Subtyping_Is_Not_a_Good_Match_for_Object-Oriented_Languages/links/09e415122545c6d7a4000000/Subtyping-Is-Not-a-Good-Match-for-Object-Oriented-Languages.pdf}{Bruce et al, 1996}]
-                    \item Разделение точных и экзистенциальных типов, локальное уточнение [\href{https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a9d601d3bf8c921748902d58078d0a1b28f6ec4d}{Saito et al, 2009}]
+                    \item Разделение точных и экзистенциальных типов, локальное уточнение [\href{http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/papers/pdf/thistype-SAC09.pdf}{Saito et al, 2009}]
                     \item Именованные wildcard'ы и точные типовые параметры [\href{https://www.researchgate.net/profile/Sukyoung-Ryu/publication/254004584_Exact_type_parameterization_and_ThisType_support/links/54b90ed10cf269d8cbf72d01/Exact-type-parameterization-and-ThisType-support.pdf}{Na et al, 2012}]
                 \end{itemize}
                 \item[$\color{red} -$] Специальные правила ограничивают использование сложных методов
@@ -776,6 +779,25 @@
 
 
     \subsection{Kotlin}
+
+    \begin{frame}[fragile]{Ресиверы (получатели) в Kotlin}
+        %! suppress = Quote
+        \begin{block}{(Dispatch) Ресивер функции}
+            Специальный параметр функции, по которому происходит виртуальная диспетчеризация вызова к реализации наследника.
+            Доступен как \mintinline{kotlin}|this| в её теле.
+            \begin{itemize}
+                \item Например, в вызове \mintinline{kotlin}|"a".plus("b")| строка \mintinline{kotlin}|"a"| является ресивером для функции \mintinline{kotlin}|plus|
+            \end{itemize}
+        \end{block}
+        \pause
+        \begin{block}{Область видимости типа}
+            Множество функций, для которых объект данного типа может быть использован как ресивер.
+            \begin{itemize}
+                \item Функция \mintinline{kotlin}|plus| содержится в области видимости типа \mintinline{kotlin}|String|: \\
+                \mintinline{kotlin}|(plus: String.(String) -> String)| $\in$ \mintinline{kotlin}|scope(String)|
+            \end{itemize}
+        \end{block}
+    \end{frame}
 
     \begin{frame}{Вариантность}
         \begin{block}{Вариантность типового параметра}
@@ -977,9 +999,9 @@
         \begin{columns}[onlytextwidth]
             \begin{column}[t]{0.40\textwidth}
                 \begin{itemize}
-                    \item Поддерживаются в Scala и Swift
+                    \item Поддерживаются в Scala\footnote{\url{https://docs.scala-lang.org/tour/abstract-type-members.html}} и Swift
                     \item Аналогично рекурсивным дженерикам, но без зашумления клиентского кода
-                    \item Сложны в реализации: отслеживание по какому пути получен ассоциированный тип
+                    \item Сложны в использовании и реализации: отслеживание по какому пути получено значение ассоциированного типа\footnote{[\href{http://lampwww.epfl.ch/~amin/dot/fpdt_post.pdf}{Odersky et al, 2014}]}
                     \item Запроса от пользователей на поддержку ассоциированных типов в Kotlin нет
                 \end{itemize}
             \end{column}\hfill%
@@ -1003,6 +1025,26 @@
                 \end{minted}
             \end{column}
         \end{columns}
+    \end{frame}
+
+    \begin{frame}[fragile]{Self-типы как частный случай ассоциированных типов}
+        \begin{block}{Ассоциированные типы всё равно требуют доработки для сценариев Self-типов}
+            \begin{itemize}
+                \item Ассоциированному типу приходится вручную уточнять границу в каждом наследнике
+                \item Требуется явное приведение типа \mintinline{kotlin}|this| к ассоциированному типу
+                \item Новые значения по умолчанию не принадлежат ассоциированному типу (пока он не зафиксирован)
+                \item Ассоциированный тип однажды должен быть зафиксирован в иерархии наследования и не может быть уточнён ниже без изменения базового класса
+            \end{itemize}
+        \end{block}
+
+        \begin{block}{Преимущества реализации Self-типов через ассоциированные}
+            \begin{itemize}
+                \item Автоматически возможна нетривиальная поддержка контравариантных позиций
+                \begin{itemize}
+                    \item Локальное уточнение: \mintinline{java}|node.next.insert(node)| [\href{http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/papers/pdf/thistype-SAC09.pdf}{Saito et al, 2009}]
+                \end{itemize}
+            \end{itemize}
+        \end{block}
     \end{frame}
 
     \begin{frame}[fragile]{TypeScript: небезопасность системы типов}
@@ -1033,7 +1075,7 @@
             \item Если декларация метода протокола\footnote{Протоколы --- механизм специального полиморфизма как трейты или классы типов} содержит \href{https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/\#Associated-Types}{\color{blue}ассоциированный тип} или Self-тип не в простой исходящей позиции:
             \begin{itemize}
                 \item Запрещено вызывать такие методы виртуально на \mintinline{swift}|any Protocol|
-                \item Можно вызывать, если протокол является ограничением типового параметра или при мономорфизации на \mintinline{swift}|some Protocol|
+                \item Можно вызывать, если протокол является ограничением типового параметра и на \mintinline{swift}|some Protocol|
                 \item Реализующий класс обязан заменить такие вхождения Self-типа на себя
                 \item Ситуация становится аналогична языкам без наследования
             \end{itemize}
