@@ -1,3 +1,5 @@
+package design
+
 interface A {
     fun foo()
 }
